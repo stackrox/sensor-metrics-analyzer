@@ -1,0 +1,23 @@
+rule_type = "histogram"
+metric_name = "http_incoming_request_duration_histogram_seconds"
+display_name = "http_incoming_request_duration_histogram_seconds"
+description = "HTTP request latency distribution"
+
+[histogram_config]
+unit = "seconds"
+
+[thresholds]
+p95_good = 0.1
+p95_warn = 1.0
+
+[messages]
+green = "p95={p95:.3f}s, p99={p99:.3f}s (good latency)"
+yellow = "p95={p95:.3f}s, p99={p99:.3f}s (elevated latency)"
+red = "p95={p95:.3f}s, p99={p99:.3f}s (high latency - investigate)"
+
+[remediation]
+red = "Investigate HTTP request processing bottlenecks. Check upstream dependencies. Review request handling logic."
+yellow = "Monitor latency trends. Investigate if elevated latency persists."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

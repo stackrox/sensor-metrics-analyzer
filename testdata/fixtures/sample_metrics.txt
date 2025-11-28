@@ -1,0 +1,82 @@
+# Test Prometheus metrics file
+# TYPE rox_sensor_num_containers_in_clusterentities_store gauge
+rox_sensor_num_containers_in_clusterentities_store 150
+
+# TYPE rox_sensor_num_pods_in_store gauge
+rox_sensor_num_pods_in_store 50
+
+# TYPE rox_sensor_network_flow_buffer_size gauge
+rox_sensor_network_flow_buffer_size 120
+
+# TYPE process_open_fds gauge
+process_open_fds 100
+
+# TYPE process_max_fds gauge
+process_max_fds 1000
+
+# TYPE rox_sensor_process_cpu_nr_throttled counter
+rox_sensor_process_cpu_nr_throttled 5
+
+# TYPE rox_sensor_process_cpu_nr_periods counter
+rox_sensor_process_cpu_nr_periods 100
+
+# TYPE rox_sensor_detector_network_flow_queue_operations_total counter
+rox_sensor_detector_network_flow_queue_operations_total{Operation="Add"} 1000
+rox_sensor_detector_network_flow_queue_operations_total{Operation="Remove"} 950
+
+# TYPE rox_sensor_dedupe_cache_hits counter
+rox_sensor_dedupe_cache_hits 80
+
+# TYPE rox_sensor_dedupe_cache_misses counter
+rox_sensor_dedupe_cache_misses 20
+
+# TYPE http_incoming_request_duration_histogram_seconds_bucket histogram
+http_incoming_request_duration_histogram_seconds_bucket{le="0.005"} 100
+http_incoming_request_duration_histogram_seconds_bucket{le="0.01"} 150
+http_incoming_request_duration_histogram_seconds_bucket{le="0.025"} 180
+http_incoming_request_duration_histogram_seconds_bucket{le="0.05"} 190
+http_incoming_request_duration_histogram_seconds_bucket{le="0.1"} 195
+http_incoming_request_duration_histogram_seconds_bucket{le="0.25"} 198
+http_incoming_request_duration_histogram_seconds_bucket{le="0.5"} 199
+http_incoming_request_duration_histogram_seconds_bucket{le="1"} 200
+http_incoming_request_duration_histogram_seconds_bucket{le="2.5"} 200
+http_incoming_request_duration_histogram_seconds_bucket{le="5"} 200
+http_incoming_request_duration_histogram_seconds_bucket{le="10"} 200
+http_incoming_request_duration_histogram_seconds_bucket{le="+Inf"} 200
+
+# TYPE http_incoming_request_duration_histogram_seconds_sum counter
+http_incoming_request_duration_histogram_seconds_sum 2.5
+
+# TYPE http_incoming_request_duration_histogram_seconds_count counter
+http_incoming_request_duration_histogram_seconds_count 200
+
+# TYPE go_goroutines gauge
+go_goroutines 5000
+
+# TYPE go_threads gauge
+go_threads 50
+
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 500000
+
+# TYPE rox_sensor_output_channel_size gauge
+rox_sensor_output_channel_size 10
+
+# TYPE rox_sensor_num_endpoints_in_clusterentities_store gauge
+rox_sensor_num_endpoints_in_clusterentities_store 100
+
+# TYPE rox_sensor_num_ips_in_clusterentities_store gauge
+rox_sensor_num_ips_in_clusterentities_store 80
+
+# TYPE rox_sensor_secured_nodes gauge
+rox_sensor_secured_nodes 5
+
+# TYPE rox_sensor_version_info gauge
+rox_sensor_version_info{version="4.8.0"} 1
+
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 50000000
+
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 80000000
+

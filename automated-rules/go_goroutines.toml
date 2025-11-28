@@ -1,0 +1,19 @@
+rule_type = "gauge_threshold"
+metric_name = "go_goroutines"
+display_name = "go_goroutines"
+description = "Number of goroutines"
+
+[thresholds]
+low = 10000
+high = 100000
+higher_is_worse = true
+
+[messages]
+green = "{value:.0f} goroutines (healthy)"
+yellow = "{value:.0f} goroutines (elevated - monitor if growing)"
+
+[remediation]
+yellow = "Monitor goroutine count trends. Check for goroutine leaks if count continues growing."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

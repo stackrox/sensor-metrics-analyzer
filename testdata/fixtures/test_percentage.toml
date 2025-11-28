@@ -1,0 +1,21 @@
+# Test rule for percentage
+rule_type = "percentage"
+display_name = "CPU Throttling"
+description = "Test percentage rule"
+
+[percentage_config]
+numerator = "rox_sensor_process_cpu_nr_throttled"
+denominator = "rox_sensor_process_cpu_nr_periods"
+
+[thresholds]
+low = 2.0
+high = 10.0
+
+[messages]
+green = "CPU throttling: {value:.1f}% (healthy)"
+yellow = "CPU throttling: {value:.1f}% (elevated)"
+red = "CPU throttling: {value:.1f}% (critical)"
+zero_activity = "No CPU throttling data yet"
+
+acs_versions = ["4.7+", "4.8+"]
+

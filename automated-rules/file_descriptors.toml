@@ -1,0 +1,22 @@
+rule_type = "percentage"
+display_name = "file_descriptors"
+description = "File descriptor utilization"
+
+[percentage_config]
+numerator = "process_open_fds"
+denominator = "process_max_fds"
+
+[thresholds]
+low = 50.0
+high = 80.0
+
+[messages]
+green = "File descriptors: {value}% ({numerator:.0f}/{denominator:.0f})"
+yellow = "File descriptors: {value}% ({numerator:.0f}/{denominator:.0f}) - elevated"
+red = "File descriptors: {value}% ({numerator:.0f}/{denominator:.0f}) - near limit"
+
+[remediation]
+red = "Increase file descriptor limits. Check for file descriptor leaks. Review ulimit settings."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

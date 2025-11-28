@@ -1,0 +1,22 @@
+# Test rule for queue operations
+rule_type = "queue_operations"
+metric_name = "rox_sensor_detector_network_flow_queue_operations_total"
+display_name = "Network Flow Queue"
+description = "Test queue operations rule"
+
+[queue_config]
+operation_label = "Operation"
+add_value = "Add"
+remove_value = "Remove"
+
+[thresholds]
+low = 10
+high = 100
+
+[messages]
+green = "Queue balanced: Add={add:.0f}, Remove={remove:.0f}, Diff={diff:.0f}"
+yellow = "Queue imbalance: Add={add:.0f}, Remove={remove:.0f}, Diff={diff:.0f}"
+red = "Queue backed up: Add={add:.0f}, Remove={remove:.0f}, Diff={diff:.0f}"
+
+acs_versions = ["4.7+", "4.8+"]
+

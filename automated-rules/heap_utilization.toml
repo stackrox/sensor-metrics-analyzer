@@ -1,0 +1,21 @@
+rule_type = "percentage"
+display_name = "heap_utilization"
+description = "Heap memory utilization"
+
+[percentage_config]
+numerator = "go_memstats_heap_alloc_bytes"
+denominator = "go_memstats_heap_sys_bytes"
+
+[thresholds]
+low = 70.0
+high = 85.0
+
+[messages]
+green = "Heap {value:.1f}% utilized (healthy)"
+yellow = "Heap {value:.1f}% utilized (elevated - high pressure)"
+
+[remediation]
+yellow = "High heap utilization. Monitor memory usage. Check for memory leaks."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

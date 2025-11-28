@@ -1,0 +1,23 @@
+rule_type = "histogram"
+metric_name = "rox_sensor_k8s_event_processing_duration"
+display_name = "rox_sensor_k8s_event_processing_duration"
+description = "K8s event processing duration"
+
+[histogram_config]
+unit = "seconds"
+
+[thresholds]
+p95_good = 0.1
+p95_warn = 1.0
+
+[messages]
+green = "p95={p95:.3f}s, p99={p99:.3f}s (good)"
+yellow = "p95={p95:.3f}s, p99={p99:.3f}s (elevated)"
+red = "p95={p95:.3f}s, p99={p99:.3f}s (high latency)"
+
+[remediation]
+red = "High K8s event processing latency. Check event handler performance."
+yellow = "Monitor event processing latency."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

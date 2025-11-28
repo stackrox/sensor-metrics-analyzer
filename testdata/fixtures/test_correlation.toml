@@ -1,0 +1,23 @@
+# Test rule with correlation
+rule_type = "gauge_threshold"
+metric_name = "rox_sensor_output_channel_size"
+display_name = "Output Channel Size"
+description = "Test correlation rule"
+
+[thresholds]
+low = 10
+high = 50
+higher_is_worse = true
+
+[correlation]
+suppress_if = [
+  { metric_name = "go_goroutines", operator = "lt", value = 1000, status = "yellow" }
+]
+
+[messages]
+green = "Channel size: {value:.0f} (healthy)"
+yellow = "Channel size: {value:.0f} (elevated)"
+red = "Channel size: {value:.0f} (critical)"
+
+acs_versions = ["4.7+", "4.8+"]
+

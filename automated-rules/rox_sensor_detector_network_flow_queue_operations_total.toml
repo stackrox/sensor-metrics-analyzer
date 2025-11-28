@@ -1,0 +1,25 @@
+rule_type = "queue_operations"
+metric_name = "rox_sensor_detector_network_flow_queue_operations_total"
+display_name = "rox_sensor_detector_network_flow_queue_operations_total"
+description = "Network flow queue Add/Remove balance"
+
+[queue_config]
+operation_label = "Operation"
+add_value = "Add"
+remove_value = "Remove"
+
+[thresholds]
+low = 100
+high = 1000
+
+[messages]
+green = "Queue balanced: Add={add:.0f}, Remove={remove:.0f}, Diff={diff:.0f}"
+yellow = "Queue imbalance: Add={add:.0f}, Remove={remove:.0f}, Diff={diff:.0f} - backlog forming"
+red = "Queue severely backed up: Add={add:.0f}, Remove={remove:.0f}, Diff={diff:.0f} - data loss risk"
+
+[remediation]
+red = "Investigate queue processing bottlenecks. Check downstream consumers. Consider increasing processing capacity."
+yellow = "Monitor queue balance. Investigate if imbalance persists."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

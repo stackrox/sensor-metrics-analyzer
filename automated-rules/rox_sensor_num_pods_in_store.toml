@@ -1,0 +1,19 @@
+rule_type = "gauge_threshold"
+metric_name = "rox_sensor_num_pods_in_store"
+display_name = "rox_sensor_num_pods_in_store"
+description = "Number of pods tracked by Sensor"
+
+[thresholds]
+low = 0
+high = 0
+higher_is_worse = false
+
+[messages]
+green = "{value:.0f} pods tracked (cluster size metric)"
+red = "Zero pods detected - Sensor cannot see any pods!"
+
+[remediation]
+red = "Sensor cannot see any pods. Check Sensor connectivity to Kubernetes API. Verify RBAC permissions."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

@@ -1,0 +1,21 @@
+rule_type = "gauge_threshold"
+metric_name = "rox_sensor_output_channel_size"
+display_name = "rox_sensor_output_channel_size"
+description = "Output channel size (messages to Central)"
+
+[thresholds]
+low = 50
+high = 100
+higher_is_worse = true
+
+[messages]
+green = "{value:.0f} messages waiting (should be ~0)"
+yellow = "{value:.0f} messages waiting (backlog forming)"
+red = "{value:.0f} messages waiting (backed up - Central slow or offline)"
+
+[remediation]
+red = "Output channel backed up. Check Central connectivity. Verify network connectivity and Central availability."
+yellow = "Monitor output channel size. Investigate if backlog persists."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

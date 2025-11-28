@@ -1,0 +1,23 @@
+rule_type = "histogram"
+metric_name = "rox_sensor_k8s_event_ingestion_to_send_duration"
+display_name = "rox_sensor_k8s_event_ingestion_to_send_duration"
+description = "K8s event ingestion to send duration"
+
+[histogram_config]
+unit = "seconds"
+
+[thresholds]
+p95_good = 1.0
+p95_warn = 5.0
+
+[messages]
+green = "p95={p95:.3f}s, p99={p99:.3f}s (good)"
+yellow = "p95={p95:.3f}s, p99={p99:.3f}s (elevated)"
+red = "p95={p95:.3f}s, p99={p99:.3f}s (high latency)"
+
+[remediation]
+red = "High K8s event processing latency. Check event processing pipeline."
+yellow = "Monitor event processing latency."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

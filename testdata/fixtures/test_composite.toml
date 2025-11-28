@@ -1,0 +1,34 @@
+# Test rule for composite
+rule_type = "composite"
+display_name = "Cluster Entities Relationship"
+description = "Test composite rule"
+
+[composite_config]
+
+[[composite_config.metrics]]
+name = "containers"
+source = "rox_sensor_num_containers_in_clusterentities_store"
+
+[[composite_config.metrics]]
+name = "endpoints"
+source = "rox_sensor_num_endpoints_in_clusterentities_store"
+
+[[composite_config.checks]]
+check_type = "not_zero"
+metrics = ["containers", "endpoints"]
+status = "red"
+message = "Zero entities detected: containers={containers}, endpoints={endpoints}"
+
+[[composite_config.checks]]
+check_type = "ratio"
+numerator = "endpoints"
+denominator = "containers"
+min_ratio = 0.5
+status = "yellow"
+message = "Low endpoint ratio: containers={containers}, endpoints={endpoints}"
+
+[messages]
+green = "Entities healthy: containers={containers}, endpoints={endpoints}"
+
+acs_versions = ["4.7+", "4.8+"]
+

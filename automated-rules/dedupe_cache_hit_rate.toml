@@ -1,0 +1,25 @@
+rule_type = "cache_hit_rate"
+display_name = "dedupe_cache_hit_rate"
+description = "Deduplication cache effectiveness"
+
+[cache_config]
+hits_metric = "rox_sensor_dedupe_cache_hits"
+misses_metric = "rox_sensor_dedupe_cache_misses"
+
+[thresholds]
+low = 40.0
+high = 60.0
+higher_is_worse = false
+
+[messages]
+green = "{value:.1f}% hit rate (effective caching)"
+yellow = "{value:.1f}% hit rate (acceptable but suboptimal)"
+red = "{value:.1f}% hit rate (low - cache not working properly)"
+zero_activity = "No cache activity yet (0 hits, 0 misses)"
+
+[remediation]
+red = "Investigate cache configuration. Check cache size limits. Review cache eviction policies."
+yellow = "Monitor cache hit rate trends. Consider increasing cache size if consistently low."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

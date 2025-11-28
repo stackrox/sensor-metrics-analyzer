@@ -1,0 +1,23 @@
+rule_type = "histogram"
+metric_name = "rox_sensor_network_flow_manager_purger_duration_seconds"
+display_name = "rox_sensor_network_flow_manager_purger_duration_seconds"
+description = "Network flow manager purger duration"
+
+[histogram_config]
+unit = "seconds"
+
+[thresholds]
+p95_good = 1.0
+p95_warn = 10.0
+
+[messages]
+green = "p95={p95:.3f}s, p99={p99:.3f}s (good)"
+yellow = "p95={p95:.3f}s, p99={p99:.3f}s (elevated)"
+red = "p95={p95:.3f}s, p99={p99:.3f}s (high latency)"
+
+[remediation]
+red = "High network flow purger latency. Check purger performance."
+yellow = "Monitor purger duration trends."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

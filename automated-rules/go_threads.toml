@@ -1,0 +1,21 @@
+rule_type = "gauge_threshold"
+metric_name = "go_threads"
+display_name = "go_threads"
+description = "Number of OS threads"
+
+[thresholds]
+low = 100
+high = 500
+higher_is_worse = true
+
+[messages]
+green = "{value:.0f} OS threads (healthy)"
+yellow = "{value:.0f} OS threads (elevated - monitor)"
+red = "{value:.0f} OS threads (very high - check for thread leaks)"
+
+[remediation]
+red = "Very high thread count detected. Check for thread leaks. Review blocking operations."
+yellow = "Monitor thread count. Investigate if count continues growing."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

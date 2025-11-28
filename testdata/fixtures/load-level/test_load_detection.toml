@@ -1,0 +1,27 @@
+# Test load detection rule
+rule_type = "load_detection"
+display_name = "test_cluster_volume"
+
+[[metrics]]
+name = "containers"
+source = "rox_sensor_num_containers_in_clusterentities_store"
+weight = 1.0
+
+[[metrics]]
+name = "pods"
+source = "rox_sensor_num_pods_in_store"
+weight = 0.5
+
+[[thresholds]]
+level = "low"
+max_value = 100
+
+[[thresholds]]
+level = "medium"
+min_value = 100
+max_value = 500
+
+[[thresholds]]
+level = "high"
+min_value = 500
+

@@ -1,0 +1,21 @@
+rule_type = "gauge_threshold"
+metric_name = "http_incoming_in_flight_requests"
+display_name = "http_incoming_in_flight_requests"
+description = "HTTP in-flight requests"
+
+[thresholds]
+low = 10
+high = 50
+higher_is_worse = true
+
+[messages]
+green = "{value:.0f} requests in-flight"
+yellow = "{value:.0f} requests in-flight (elevated)"
+red = "{value:.0f} requests in-flight (high load)"
+
+[remediation]
+red = "High number of in-flight requests. Check request processing performance. Consider scaling."
+yellow = "Monitor in-flight request count trends."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

@@ -1,0 +1,19 @@
+rule_type = "gauge_threshold"
+metric_name = "rox_sensor_secured_nodes"
+display_name = "rox_sensor_secured_nodes"
+description = "Number of secured nodes"
+
+[thresholds]
+low = 0
+high = 0
+higher_is_worse = false
+
+[messages]
+green = "{value:.0f} nodes secured (cluster size metric)"
+red = "Zero nodes detected - Sensor cannot see any nodes!"
+
+[remediation]
+red = "Sensor cannot see any nodes. Check Sensor connectivity to Kubernetes API. Verify node discovery."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

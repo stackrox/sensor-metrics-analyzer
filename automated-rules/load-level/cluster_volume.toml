@@ -1,0 +1,49 @@
+# automated-rules/load-level/cluster_volume.toml
+# 
+# Load Detection Rule: Cluster Volume
+#
+# This rule determines cluster load level (low/medium/high) based on weighted metrics.
+#
+# How weights work:
+# 1. Each metric value is multiplied by its weight: weighted_value = metric_value × weight
+# 2. All weighted values are summed: weightedSum = Σ(metric_value × weight)
+# 3. All weights are summed: totalWeight = Σ(weights)
+# 4. Normalized value is calculated: normalizedValue = weightedSum / totalWeight
+# 5. The normalized value is compared against thresholds to determine load level
+#
+# Example:
+#   - Containers = 200 (weight 1.0)
+#   - Pods = 100 (weight 0.5)
+#   - weightedSum = (200 × 1.0) + (100 × 0.5) = 250
+#   - totalWeight = 1.0 + 0.5 = 1.5
+#   - normalizedValue = 250 / 1.5 = 166.67 → MEDIUM load
+#
+# Weights allow prioritizing certain metrics: containers (weight 1.0) is twice as
+# important as pods (weight 0.5) in determining cluster load.
+
+rule_type = "load_detection"
+display_name = "cluster_volume"
+
+[[metrics]]
+name = "containers"
+source = "rox_sensor_num_containers_in_clusterentities_store"
+weight = 1.0  # Full weight - containers are primary indicator of cluster size
+
+[[metrics]]
+name = "pods"
+source = "rox_sensor_num_pods_in_store"
+weight = 0.5  # Half weight - pods are secondary indicator
+
+[[thresholds]]
+level = "low"
+max_value = 100  # normalizedValue < 100
+
+[[thresholds]]
+level = "medium"
+min_value = 100   # normalizedValue >= 100
+max_value = 500   # normalizedValue < 500
+
+[[thresholds]]
+level = "high"
+min_value = 500   # normalizedValue >= 500
+

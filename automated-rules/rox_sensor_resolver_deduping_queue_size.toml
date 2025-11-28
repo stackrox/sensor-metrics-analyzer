@@ -1,0 +1,21 @@
+rule_type = "gauge_threshold"
+metric_name = "rox_sensor_resolver_deduping_queue_size"
+display_name = "rox_sensor_resolver_deduping_queue_size"
+description = "Resolver deduping queue size"
+
+[thresholds]
+low = 10
+high = 50
+higher_is_worse = true
+
+[messages]
+green = "{value:.0f} items (spikes acceptable)"
+yellow = "{value:.0f} items (elevated)"
+red = "{value:.0f} items (backed up)"
+
+[remediation]
+red = "Resolver deduping queue backed up. Check deduplication processing."
+yellow = "Monitor queue size trends."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

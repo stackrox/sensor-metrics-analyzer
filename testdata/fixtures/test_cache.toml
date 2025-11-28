@@ -1,0 +1,22 @@
+# Test rule for cache hit rate
+rule_type = "cache_hit_rate"
+display_name = "Dedupe Cache Hit Rate"
+description = "Test cache hit rate rule"
+
+[cache_config]
+hits_metric = "rox_sensor_dedupe_cache_hits"
+misses_metric = "rox_sensor_dedupe_cache_misses"
+
+[thresholds]
+low = 40.0
+high = 60.0
+higher_is_worse = false
+
+[messages]
+green = "{value:.1f}% hit rate (good)"
+yellow = "{value:.1f}% hit rate (acceptable)"
+red = "{value:.1f}% hit rate (low)"
+zero_activity = "No cache activity yet"
+
+acs_versions = ["4.7+", "4.8+"]
+

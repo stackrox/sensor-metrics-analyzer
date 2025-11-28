@@ -1,0 +1,23 @@
+rule_type = "histogram"
+metric_name = "rox_sensor_component_process_message_duration_seconds"
+display_name = "rox_sensor_component_process_message_duration_seconds"
+description = "Component process message duration"
+
+[histogram_config]
+unit = "seconds"
+
+[thresholds]
+p95_good = 0.1
+p95_warn = 1.0
+
+[messages]
+green = "p95={p95:.3f}s, p99={p99:.3f}s (good)"
+yellow = "p95={p95:.3f}s, p99={p99:.3f}s (elevated)"
+red = "p95={p95:.3f}s, p99={p99:.3f}s (high latency)"
+
+[remediation]
+red = "High component message processing latency. Check component performance."
+yellow = "Monitor component message processing latency."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

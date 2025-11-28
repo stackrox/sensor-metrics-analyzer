@@ -1,0 +1,23 @@
+rule_type = "percentage"
+display_name = "cpu_throttling"
+description = "CPU throttling percentage"
+
+[percentage_config]
+numerator = "rox_sensor_process_cpu_nr_throttled"
+denominator = "rox_sensor_process_cpu_nr_periods"
+
+[thresholds]
+low = 2.0
+high = 10.0
+
+[messages]
+green = "CPU throttling: {value}% (healthy)"
+yellow = "CPU throttling: {value}% (elevated - monitor)"
+red = "CPU throttling: {value}% (critical - increase CPU limits)"
+
+[remediation]
+red = "Increase CPU limits/requests for Sensor pod. Check resource quotas and node capacity. Consider scaling horizontally if single pod cannot handle load."
+yellow = "Monitor CPU throttling trends. If sustained, increase CPU allocation."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+

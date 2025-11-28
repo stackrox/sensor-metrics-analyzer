@@ -1,0 +1,57 @@
+# Automated Metrics Analysis Report
+
+**Cluster:** {{.ClusterName}}
+**ACS Version:** {{.ACSVersion}}
+**Load Level:** {{.LoadLevel}}
+**Generated:** {{.Timestamp.Format "2006-01-02 15:04:05"}}
+
+## Summary
+
+- 🔴 **RED:** {{.Summary.RedCount}} metrics
+- 🟡 **YELLOW:** {{.Summary.YellowCount}} metrics
+- 🟢 **GREEN:** {{.Summary.GreenCount}} metrics
+
+{{if gt .Summary.RedCount 0}}
+## 🔴 Critical Issues
+
+{{range .Results}}
+{{if eq .Status "RED"}}
+### {{.RuleName}}
+
+**Status:** RED
+**Message:** {{.Message}}
+{{if .Remediation}}
+**Recommended Action:** {{.Remediation}}
+{{end}}
+
+{{end}}
+{{end}}
+{{end}}
+
+{{if gt .Summary.YellowCount 0}}
+## 🟡 Warnings
+
+{{range .Results}}
+{{if eq .Status "YELLOW"}}
+### {{.RuleName}}
+
+**Status:** YELLOW
+**Message:** {{.Message}}
+{{if .Remediation}}
+**Recommended Action:** {{.Remediation}}
+{{end}}
+
+{{end}}
+{{end}}
+{{end}}
+
+{{if gt .Summary.GreenCount 0}}
+## 🟢 Healthy Metrics
+
+{{range .Results}}
+{{if eq .Status "GREEN"}}
+- **{{.RuleName}}:** {{.Message}}
+{{end}}
+{{end}}
+{{end}}
+

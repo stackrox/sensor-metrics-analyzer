@@ -1,0 +1,21 @@
+rule_type = "gauge_threshold"
+metric_name = "rox_sensor_resolver_channel_size"
+display_name = "rox_sensor_resolver_channel_size"
+description = "Resolver channel size"
+
+[thresholds]
+low = 10
+high = 20
+higher_is_worse = true
+
+[messages]
+green = "{value:.0f} items queued (internal bottleneck if growing)"
+yellow = "{value:.0f} items queued (elevated)"
+red = "{value:.0f} items queued (backed up - internal processing issue)"
+
+[remediation]
+red = "Resolver channel backed up. Check internal processing bottlenecks. Review resolver performance."
+yellow = "Monitor resolver channel size trends."
+
+acs_versions = ["4.7+", "4.8+", "4.9+"]
+
