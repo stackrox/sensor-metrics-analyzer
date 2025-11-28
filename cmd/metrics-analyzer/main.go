@@ -12,6 +12,7 @@ import (
 	"github.com/stackrox/sensor-metrics-analyzer/internal/parser"
 	"github.com/stackrox/sensor-metrics-analyzer/internal/reporter"
 	"github.com/stackrox/sensor-metrics-analyzer/internal/rules"
+	"github.com/stackrox/sensor-metrics-analyzer/internal/tui"
 )
 
 func main() {
@@ -41,34 +42,50 @@ func analyzeCommand() {
 	rulesDir := fs.String("rules", ".", "Directory containing TOML rules (default: current directory)")
 	loadLevelDir := fs.String("load-level-dir", "./load-level", "Directory containing load detection rules")
 	output := fs.String("output", "", "Output file (default: stdout)")
-	format := fs.String("format", "console", "Output format: console, markdown")
+	format := fs.String("format", "console", "Output format: console, markdown, tui (interactive)")
 	clusterName := fs.String("cluster", "", "Cluster name (extracted from filename if not provided)")
 	loadLevelOverride := fs.String("load-level", "", "Override detected load level (low/medium/high)")
 	acsVersionOverride := fs.String("acs-version", "", "Override detected ACS version")
 	templatePath := fs.String("template", "./templates/markdown.tmpl", "Path to markdown template")
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: metrics-analyzer analyze <metrics-file> [flags]\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: metrics-analyzer analyze [flags] <metrics-file>\n\n")
 		fmt.Fprintf(os.Stderr, "Analyzes Prometheus metrics using declarative TOML rules.\n\n")
 		fmt.Fprintf(os.Stderr, "Arguments:\n")
 		fmt.Fprintf(os.Stderr, "  metrics-file       Path to Prometheus metrics file\n\n")
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		fs.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\n⚠️  Note: Flags must come BEFORE the metrics file!\n")
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
 		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze metrics.txt\n")
-		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze metrics.txt --rules ./automated-rules\n")
-		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze metrics.txt --format markdown --output report.md\n")
-		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze metrics.txt --load-level high --acs-version 4.8\n")
+		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze --rules ./automated-rules metrics.txt\n")
+		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze --format markdown --output report.md metrics.txt\n")
+		fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze --format tui --rules ./automated-rules metrics.txt\n")
 	}
 
 	fs.Parse(os.Args[2:])
 
 	if fs.NArg() < 1 {
-		fmt.Fprintf(os.Stderr, "Usage: metrics-analyzer analyze <metrics-file> [flags]\n")
+		fmt.Fprintf(os.Stderr, "Error: missing metrics file\n")
+		fmt.Fprintf(os.Stderr, "Usage: metrics-analyzer analyze [flags] <metrics-file>\n")
 		os.Exit(1)
 	}
 
 	metricsFile := fs.Arg(0)
+
+	// Check for flags after positional argument (common mistake)
+	for i := 1; i < fs.NArg(); i++ {
+		arg := fs.Arg(i)
+		if strings.HasPrefix(arg, "-") {
+			fmt.Fprintf(os.Stderr, "Error: flags must come before the metrics file, not after\n")
+			fmt.Fprintf(os.Stderr, "  Found flag '%s' after '%s'\n\n", arg, metricsFile)
+			fmt.Fprintf(os.Stderr, "Correct usage:\n")
+			fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze [flags] <metrics-file>\n\n")
+			fmt.Fprintf(os.Stderr, "Example:\n")
+			fmt.Fprintf(os.Stderr, "  metrics-analyzer analyze --format tui --rules ./automated-rules %s\n", metricsFile)
+			os.Exit(1)
+		}
+	}
 
 	// Extract cluster name from filename if not provided
 	if *clusterName == "" {
@@ -129,6 +146,16 @@ func analyzeCommand() {
 	// Generate report
 	var outputContent string
 	switch *format {
+	case "tui":
+		// Interactive TUI mode
+		if *output != "" {
+			fmt.Fprintf(os.Stderr, "Warning: --output is ignored in TUI mode\n")
+		}
+		if err := tui.Run(report); err != nil {
+			fmt.Fprintf(os.Stderr, "TUI error: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	case "console":
 		// If output file specified, still use console format
 		if *output != "" {
@@ -247,10 +274,13 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  metrics-analyzer analyze metrics.txt")
-	fmt.Println("  metrics-analyzer analyze metrics.txt --rules ./automated-rules")
-	fmt.Println("  metrics-analyzer analyze metrics.txt --format markdown --output report.md")
-	fmt.Println("  metrics-analyzer analyze metrics.txt --load-level high --acs-version 4.8")
+	fmt.Println("  metrics-analyzer analyze --rules ./automated-rules metrics.txt")
+	fmt.Println("  metrics-analyzer analyze --format markdown --output report.md metrics.txt")
+	fmt.Println("  metrics-analyzer analyze --format tui --rules ./automated-rules metrics.txt")
+	fmt.Println("  metrics-analyzer analyze --load-level high --acs-version 4.8 metrics.txt")
 	fmt.Println("  metrics-analyzer validate")
 	fmt.Println("  metrics-analyzer validate ./automated-rules")
 	fmt.Println("  metrics-analyzer list-rules")
+	fmt.Println()
+	fmt.Println("Note: Flags must come BEFORE positional arguments!")
 }
