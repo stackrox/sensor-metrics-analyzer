@@ -2,6 +2,10 @@
 
 A standalone Go binary that analyzes StackRox Sensor Prometheus metrics using declarative TOML rule files.
 
+![Made with VHS](https://vhs.charm.sh/vhs-33cWV6RkqrjaeabNAcxVmc.gif)
+
+<a href="https://vhs.charm.sh"><img src="https://stuff.charm.sh/vhs/badge.svg" alt="Made with VHS"></a>
+
 ## ✨ Features
 
 - **🎮 Interactive TUI**: Beautiful terminal UI with keyboard navigation (powered by [Bubble Tea](https://github.com/charmbracelet/bubbletea))
@@ -19,11 +23,13 @@ make build
 
 ## Usage
 
+> ⚠️ **Note:** Flags must come BEFORE the metrics file!
+
 ### Interactive TUI Mode (Recommended)
 
 ```bash
 # Launch interactive terminal UI
-./bin/metrics-analyzer analyze metrics.txt --format tui
+./bin/metrics-analyzer analyze --format tui --rules ./automated-rules metrics.txt
 ```
 
 **TUI Features:**
@@ -40,16 +46,16 @@ make build
 ./bin/metrics-analyzer analyze metrics.txt
 
 # Analyze with custom rules directory
-./bin/metrics-analyzer analyze metrics.txt --rules ./automated-rules
+./bin/metrics-analyzer analyze --rules ./automated-rules metrics.txt
 
 # Generate markdown report
-./bin/metrics-analyzer analyze metrics.txt --format markdown --output report.md
+./bin/metrics-analyzer analyze --format markdown --output report.md metrics.txt
 
 # Override load level
-./bin/metrics-analyzer analyze metrics.txt --load-level high
+./bin/metrics-analyzer analyze --load-level high metrics.txt
 
 # Specify ACS version
-./bin/metrics-analyzer analyze metrics.txt --acs-version 4.8
+./bin/metrics-analyzer analyze --acs-version 4.8 metrics.txt
 ```
 
 ### Utility Commands
@@ -104,8 +110,23 @@ make test
 
 # Integration test (compare with Python output)
 python3 analyze_metrics_full.py metrics.txt > /tmp/python-output.txt
-./bin/metrics-analyzer analyze metrics.txt --format markdown --output /tmp/go-report.md
+./bin/metrics-analyzer analyze --format markdown --output /tmp/go-report.md metrics.txt
 go run testdata/compare_outputs.go /tmp/python-output.txt /tmp/go-report.md
+```
+
+## Recording Demos
+
+This project uses [VHS](https://github.com/charmbracelet/vhs) for recording terminal demos:
+
+```bash
+# Install VHS
+brew install vhs
+
+# Record the demo
+vhs demo.tape
+
+# Or record the short version
+vhs demo-short.tape
 ```
 
 ## Dependencies
