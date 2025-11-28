@@ -27,3 +27,6 @@ go.work.sum
 *.tmp
 *.log
 
+# Demo GIFs (hosted on vhs.charm.sh)
+demo/*.gif
+

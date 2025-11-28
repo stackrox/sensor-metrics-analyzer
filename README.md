@@ -2,9 +2,15 @@
 
 A standalone Go binary that analyzes StackRox Sensor Prometheus metrics using declarative TOML rule files.
 
-![Made with VHS](https://vhs.charm.sh/vhs-33cWV6RkqrjaeabNAcxVmc.gif)
-
 <a href="https://vhs.charm.sh"><img src="https://stuff.charm.sh/vhs/badge.svg" alt="Made with VHS"></a>
+
+## 🎬 Demos
+
+### Interactive TUI Mode
+![TUI Demo](https://vhs.charm.sh/vhs-33cWV6RkqrjaeabNAcxVmc.gif)
+
+### CLI Mode (Console & Markdown)
+![CLI Demo](https://vhs.charm.sh/vhs-5slvsgOGnyRd7JsWNA7vMu.gif)
 
 ## ✨ Features
 
@@ -116,17 +122,20 @@ go run testdata/compare_outputs.go /tmp/python-output.txt /tmp/go-report.md
 
 ## Recording Demos
 
-This project uses [VHS](https://github.com/charmbracelet/vhs) for recording terminal demos:
+This project uses [VHS](https://github.com/charmbracelet/vhs) for recording terminal demos.
+See the [`demo/`](demo/) folder for scripts and instructions.
 
 ```bash
 # Install VHS
 brew install vhs
 
-# Record the demo
-vhs demo.tape
+# Record demos
+cd demo
+vhs demo.tape       # Full TUI demo
+vhs demo-cli.tape   # CLI mode demo
 
-# Or record the short version
-vhs demo-short.tape
+# Publish to charm servers
+vhs publish demo.gif
 ```
 
 ## Dependencies
