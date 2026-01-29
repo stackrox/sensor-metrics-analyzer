@@ -15,15 +15,31 @@
 
 ## 🔴 Critical Issues
 
-{{ range .RedResults }}
-### {{.RuleName}}
-**Status:** RED
-**Message:** {{.Message}}
-{{ if .PotentialActionUser }}
-**Potential action:** {{.PotentialActionUser}}
+{{ range $i, $r := .RedResults }}
+{{ if gt $i 0 }}
+---
 {{ end }}
-{{ if .PotentialActionDeveloper }}
-**Potential action (developer):** {{.PotentialActionDeveloper}}
+### {{ $r.RuleName }}
+#### Status
+RED
+
+#### Message
+{{ $r.Message }}
+{{ if gt (len $r.Details) 0 }}
+#### Details
+{{ range $r.Details }}
+- {{ . }}
+{{ end }}
+{{ end }}
+{{ if $r.PotentialActionUser }}
+#### Potential action
+{{ $r.PotentialActionUser }}
+{{ end }}
+{{ if $r.PotentialActionDeveloper }}
+#### Potential action (developer)
+{{ $r.PotentialActionDeveloper }}
+{{ end }}
+
 {{ end }}
 
 {{ end }}
@@ -32,15 +48,31 @@
 
 ## 🟡 Warnings
 
-{{ range .YellowResults }}
-### {{.RuleName}}
-**Status:** YELLOW
-**Message:** {{.Message}}
-{{ if .PotentialActionUser }}
-**Potential action:** {{.PotentialActionUser}}
+{{ range $i, $r := .YellowResults }}
+{{ if gt $i 0 }}
+---
 {{ end }}
-{{ if .PotentialActionDeveloper }}
-**Potential action (developer):** {{.PotentialActionDeveloper}}
+### {{ $r.RuleName }}
+#### Status
+YELLOW
+
+#### Message
+{{ $r.Message }}
+{{ if gt (len $r.Details) 0 }}
+#### Details
+{{ range $r.Details }}
+- {{ . }}
+{{ end }}
+{{ end }}
+{{ if $r.PotentialActionUser }}
+#### Potential action
+{{ $r.PotentialActionUser }}
+{{ end }}
+{{ if $r.PotentialActionDeveloper }}
+#### Potential action (developer)
+{{ $r.PotentialActionDeveloper }}
+{{ end }}
+
 {{ end }}
 
 {{ end }}
@@ -52,3 +84,4 @@
 - **{{.RuleName}}:** {{.Message}}
 {{ end }}
 
+{{ end }}

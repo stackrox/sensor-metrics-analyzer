@@ -5,6 +5,7 @@ bin/
 *.dll
 *.so
 *.dylib
+metrics-analyzer
 
 # Test artifacts
 coverage.out
@@ -26,6 +27,9 @@ go.work.sum
 # Temporary files
 *.tmp
 *.log
+
+# Frontend build output
+dist/
 
 # Demo GIFs (hosted on vhs.charm.sh)
 demo/*.gif
