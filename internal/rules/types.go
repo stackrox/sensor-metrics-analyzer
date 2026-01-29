@@ -193,7 +193,7 @@ type EvaluationResult struct {
 	Status                   Status
 	Message                  string
 	Value                    float64
-	Details                  map[string]interface{}
+	Details                  []string
 	Remediation              string // Legacy field (use PotentialActionUser/Developer)
 	PotentialActionUser      string
 	PotentialActionDeveloper string

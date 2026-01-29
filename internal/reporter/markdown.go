@@ -49,13 +49,8 @@ func generateMarkdownDefault(report rules.AnalysisReport) string {
 			result += "**Message:** " + r.Message + "\n"
 			if len(r.Details) > 0 {
 				result += "**Details:**\n"
-				keys := make([]string, 0, len(r.Details))
-				for k := range r.Details {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
-				for _, k := range keys {
-					result += "- " + k + ": " + fmt.Sprintf("%v", r.Details[k]) + "\n"
+				for _, detail := range r.Details {
+					result += "- " + detail + "\n"
 				}
 			}
 			if r.PotentialActionUser != "" {
@@ -78,13 +73,8 @@ func generateMarkdownDefault(report rules.AnalysisReport) string {
 			result += "**Message:** " + r.Message + "\n"
 			if len(r.Details) > 0 {
 				result += "**Details:**\n"
-				keys := make([]string, 0, len(r.Details))
-				for k := range r.Details {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
-				for _, k := range keys {
-					result += "- " + k + ": " + fmt.Sprintf("%v", r.Details[k]) + "\n"
+				for _, detail := range r.Details {
+					result += "- " + detail + "\n"
 				}
 			}
 			if r.PotentialActionUser != "" {

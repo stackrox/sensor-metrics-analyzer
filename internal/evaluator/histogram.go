@@ -16,7 +16,7 @@ func EvaluateHistogram(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 	result := rules.EvaluationResult{
 		RuleName:  rule.MetricName,
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 
@@ -65,9 +65,11 @@ func EvaluateHistogram(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 	}
 
 	result.Value = p95
-	result.Details["p95"] = p95
-	result.Details["p99"] = p99
-	result.Details["count"] = totalCount
+	result.Details = append(result.Details,
+		fmt.Sprintf("p95: %.3f", p95),
+		fmt.Sprintf("p99: %.3f", p99),
+		fmt.Sprintf("count: %.0f", totalCount),
+	)
 
 	// Select thresholds based on load level
 	thresholds := selectThresholds(rule, loadLevel)
@@ -120,7 +122,7 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 	result := &rules.EvaluationResult{
 		RuleName:  baseName + " (+Inf overflow check)",
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 
@@ -211,10 +213,17 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 	}
 
 	result.Status = worstStatus
-	result.Details["Total Number of Observations"] = formatHumanNumber(worstTotalCount)
-	result.Details["Observations in +Inf bucket"] = formatHumanNumber(worstInfObservations)
-	result.Details["Percentage of observations in +Inf bucket"] = formatHumanNumber(worstInfPercentage) + " %"
-	result.Details["Highest non-infinity bucket"] = formatHumanNumber(worstHighestFiniteLe) + " units"
+	if baseMetric, ok := metrics.GetMetric(baseName); ok && baseMetric.Help != "" {
+		result.Details = append(result.Details, "Metric Description: "+baseMetric.Help)
+	} else if bucketMetric, ok := metrics.GetMetric(baseName + "_bucket"); ok && bucketMetric.Help != "" {
+		result.Details = append(result.Details, "Metric Description: "+bucketMetric.Help)
+	}
+	result.Details = append(result.Details,
+		"Total Number of Observations: "+formatHumanNumber(worstTotalCount)+" unit",
+		"Observations in +Inf bucket: "+formatHumanNumber(worstInfObservations)+" unit",
+		"Percentage of observations in +Inf bucket: "+formatHumanNumber(worstInfPercentage)+" %",
+		"Highest non-infinity bucket: "+formatHumanNumber(worstHighestFiniteLe)+" unit",
+	)
 
 	// Build message based on worst case
 	result.Message = fmt.Sprintf("%s%% of observations in +Inf bucket (acceptable). Highest non-infinity bucket: %s",
@@ -247,7 +256,7 @@ func getSeriesKey(labels map[string]string) string {
 }
 
 func formatHumanNumber(value float64) string {
-	raw := strconv.FormatFloat(value, 'f', -1, 64)
+	raw := strconv.FormatFloat(value, 'f', 2, 64)
 	sign := ""
 	if strings.HasPrefix(raw, "-") {
 		sign = "-"

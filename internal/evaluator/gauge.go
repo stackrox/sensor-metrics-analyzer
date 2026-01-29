@@ -15,7 +15,7 @@ func EvaluateGauge(rule rules.Rule, metrics parser.MetricsData, loadLevel rules.
 	result := rules.EvaluationResult{
 		RuleName:  rule.MetricName,
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 

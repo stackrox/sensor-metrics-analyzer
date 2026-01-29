@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -239,41 +238,9 @@ func (m Model) viewDetail() string {
 		detail.WriteString(detailLabelStyle.Render("Details:"))
 		detail.WriteString("\n")
 
-		// Sort keys for consistent ordering
-		keys := make([]string, 0, len(result.Details))
-		for k := range result.Details {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
 		// Display details in plain text format (no ANSI codes) for easy selection/copying
-		for _, k := range keys {
-			v := result.Details[k]
-			// Format the value nicely
-			var formattedValue string
-			switch val := v.(type) {
-			case float64:
-				// Format floats with appropriate precision
-				if val >= 1000000 {
-					formattedValue = fmt.Sprintf("%.0f", val)
-				} else if val >= 1000 {
-					formattedValue = fmt.Sprintf("%.0f", val)
-				} else if val >= 1 {
-					formattedValue = fmt.Sprintf("%.2f", val)
-				} else {
-					formattedValue = fmt.Sprintf("%.4f", val)
-				}
-			case int:
-				formattedValue = fmt.Sprintf("%d", val)
-			case int64:
-				formattedValue = fmt.Sprintf("%d", val)
-			default:
-				// For other types, convert to string as-is (no truncation)
-				formattedValue = fmt.Sprintf("%v", v)
-			}
-
-			// Plain text format: key: value (completely plain text for easy copying)
-			detail.WriteString(fmt.Sprintf("  %s: %s\n", k, formattedValue))
+		for _, detailLine := range result.Details {
+			detail.WriteString(fmt.Sprintf("  %s\n", detailLine))
 		}
 		detail.WriteString("\n")
 	}
