@@ -1,0 +1,36 @@
+[Unit]
+Description=Sensor Metrics Analyzer Web Service
+After=network.target
+
+[Service]
+Type=simple
+User=sensor-metrics
+Group=sensor-metrics
+WorkingDirectory=/opt/sensor-metrics-analyzer/web/server
+ExecStart=/opt/sensor-metrics-analyzer/bin/web-server
+
+# Environment variables (adjust paths as needed)
+Environment="LISTEN_ADDR=:8080"
+Environment="RULES_DIR=/opt/sensor-metrics-analyzer/automated-rules"
+Environment="LOAD_LEVEL_DIR=/opt/sensor-metrics-analyzer/automated-rules/load-level"
+Environment="TEMPLATE_PATH=/opt/sensor-metrics-analyzer/templates/markdown.tmpl"
+Environment="MAX_FILE_SIZE=52428800"
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/tmp
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sensor-metrics-web
+
+[Install]
+WantedBy=multi-user.target

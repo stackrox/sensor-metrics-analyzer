@@ -4,12 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/stackrox/sensor-metrics-analyzer/internal/evaluator"
-	"github.com/stackrox/sensor-metrics-analyzer/internal/loadlevel"
-	"github.com/stackrox/sensor-metrics-analyzer/internal/parser"
+	"github.com/stackrox/sensor-metrics-analyzer/internal/analyzer"
 	"github.com/stackrox/sensor-metrics-analyzer/internal/reporter"
 	"github.com/stackrox/sensor-metrics-analyzer/internal/rules"
 	"github.com/stackrox/sensor-metrics-analyzer/internal/tui"
@@ -87,61 +84,18 @@ func analyzeCommand() {
 		}
 	}
 
-	// Extract cluster name from filename if not provided
-	if *clusterName == "" {
-		*clusterName = extractClusterName(metricsFile)
-	}
-
-	// Load load detection rules
-	fmt.Fprintf(os.Stderr, "Loading load detection rules from %s...\n", *loadLevelDir)
-	loadRules, err := rules.LoadLoadDetectionRules(*loadLevelDir)
+	report, err := analyzer.AnalyzeFile(metricsFile, analyzer.Options{
+		RulesDir:           *rulesDir,
+		LoadLevelDir:       *loadLevelDir,
+		ClusterName:        *clusterName,
+		LoadLevelOverride:  *loadLevelOverride,
+		ACSVersionOverride: *acsVersionOverride,
+		Logger:             os.Stderr,
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: Failed to load load detection rules: %v\n", err)
-		loadRules = []rules.LoadDetectionRule{}
-	}
-
-	// Load evaluation rules
-	fmt.Fprintf(os.Stderr, "Loading rules from %s...\n", *rulesDir)
-	rulesList, err := rules.LoadRules(*rulesDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load rules: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to analyze metrics: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "Loaded %d rules\n", len(rulesList))
-
-	// Parse metrics
-	fmt.Fprintf(os.Stderr, "Parsing metrics from %s...\n", metricsFile)
-	metrics, err := parser.ParseFile(metricsFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse metrics: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Fprintf(os.Stderr, "Parsed %d metrics\n", len(metrics))
-
-	// Detect ACS version
-	acsVersion := *acsVersionOverride
-	if acsVersion == "" {
-		if detected, ok := metrics.DetectACSVersion(); ok {
-			acsVersion = detected
-			fmt.Fprintf(os.Stderr, "Detected ACS version: %s\n", acsVersion)
-		} else {
-			fmt.Fprintf(os.Stderr, "Warning: Could not detect ACS version\n")
-		}
-	}
-
-	// Detect load level
-	loadDetector := loadlevel.NewDetector(loadRules)
-	detectedLoadLevel, err := loadlevel.DetectWithOverride(metrics, loadDetector, rules.LoadLevel(*loadLevelOverride))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: Load level detection failed: %v\n", err)
-		detectedLoadLevel = rules.LoadLevelMedium
-	}
-	fmt.Fprintf(os.Stderr, "Detected load level: %s\n", detectedLoadLevel)
-
-	// Evaluate all rules
-	fmt.Fprintf(os.Stderr, "Evaluating rules...\n")
-	report := evaluator.EvaluateAllRules(rulesList, metrics, detectedLoadLevel, acsVersion)
-	report.ClusterName = *clusterName
 
 	// Generate report
 	var outputContent string
@@ -255,13 +209,7 @@ func listRulesCommand() {
 }
 
 func extractClusterName(filename string) string {
-	base := filepath.Base(filename)
-	// Remove extension
-	name := strings.TrimSuffix(base, filepath.Ext(base))
-	// Remove common prefixes/suffixes
-	name = strings.TrimSuffix(name, "-sensor-metrics")
-	name = strings.TrimSuffix(name, "-metrics")
-	return name
+	return analyzer.ExtractClusterName(filename)
 }
 
 func printUsage() {
