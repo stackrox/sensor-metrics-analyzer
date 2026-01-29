@@ -38,6 +38,44 @@
             margin-bottom: 30px;
         }
 
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 24px;
+            color: #95a5a6;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .meta a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .meta a:hover {
+            text-decoration: underline;
+        }
+
+        .privacy-note {
+            background: #f8f9fb;
+            border-left: 4px solid #3498db;
+            padding: 12px 16px;
+            border-radius: 4px;
+            color: #5d6d7e;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .disclaimer-note {
+            background: #fff7e6;
+            border-left: 4px solid #f39c12;
+            padding: 12px 16px;
+            border-radius: 4px;
+            color: #7d5a00;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
         .upload-section {
             border: 2px dashed #bdc3c7;
             border-radius: 8px;
@@ -195,6 +233,17 @@
     <div class="container">
         <h1>Sensor Metrics Analyzer</h1>
         <p class="subtitle">Upload a Prometheus metrics file to analyze sensor metrics</p>
+        <div class="meta" id="versionInfo">
+            <div>Version: <span id="versionValue">Unknown</span></div>
+            <div>Last update: <span id="lastUpdateValue">Unknown</span></div>
+            <div><a id="releaseLink" href="https://github.com/stackrox/sensor-metrics-analyzer/releases" target="_blank" rel="noopener">GitHub Releases</a></div>
+        </div>
+        <div class="privacy-note">
+            Privacy: Uploaded files are analyzed and not retained. Temporary files are deleted immediately after processing, and metric data is not stored.
+        </div>
+        <div class="disclaimer-note">
+            Disclaimer: This project is AI-generated and only a small fraction of the code and metric rules were verified by a human. Analysis results may be inaccurate and, in extreme cases, totally wrong.
+        </div>
 
         <div class="upload-section" id="uploadSection">
             <label for="fileInput" class="file-label">Choose File</label>
@@ -236,6 +285,33 @@
         const markdownOutput = document.getElementById('markdownOutput');
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
+        const versionValue = document.getElementById('versionValue');
+        const lastUpdateValue = document.getElementById('lastUpdateValue');
+        const releaseLink = document.getElementById('releaseLink');
+
+        const releasesUrl = 'https://github.com/stackrox/sensor-metrics-analyzer/releases';
+        releaseLink.href = releasesUrl;
+
+        fetch('/version')
+            .then(response => response.ok ? response.json() : null)
+            .then(data => {
+                if (!data) {
+                    throw new Error('Failed to fetch version info');
+                }
+                if (data.version) {
+                    versionValue.textContent = data.version;
+                }
+                if (data.lastUpdate) {
+                    const date = new Date(data.lastUpdate);
+                    lastUpdateValue.textContent = Number.isNaN(date.getTime())
+                        ? data.lastUpdate
+                        : date.toLocaleDateString();
+                }
+            })
+            .catch(() => {
+                versionValue.textContent = 'Unavailable';
+                lastUpdateValue.textContent = 'Unavailable';
+            });
 
         // File input change
         fileInput.addEventListener('change', (e) => {

@@ -38,6 +38,16 @@ type AnalyzeResponse struct {
 	Error    string `json:"error,omitempty"`
 }
 
+type VersionResponse struct {
+	Version    string `json:"version"`
+	LastUpdate string `json:"lastUpdate"`
+}
+
+var (
+	buildVersion = "dev"
+	buildTime    = ""
+)
+
 func main() {
 	cfg := parseFlags()
 
@@ -48,6 +58,7 @@ func main() {
 
 	http.HandleFunc("/api/analyze/both", handleAnalyzeBoth(cfg))
 	http.HandleFunc("/health", handleHealth)
+	http.HandleFunc("/version", handleVersion())
 
 	if err := http.ListenAndServe(cfg.ListenAddr, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
@@ -104,6 +115,26 @@ func parseFlags() *Config {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func handleVersion() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		version := "Unknown"
+		lastUpdate := "Unknown"
+
+		if buildVersion != "" {
+			version = buildVersion
+		}
+		if buildTime != "" {
+			lastUpdate = buildTime
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(VersionResponse{
+			Version:    version,
+			LastUpdate: lastUpdate,
+		})
+	}
 }
 
 func handleAnalyzeBoth(cfg *Config) http.HandlerFunc {
