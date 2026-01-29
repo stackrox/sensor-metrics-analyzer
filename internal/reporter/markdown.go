@@ -39,4 +39,3 @@ func filterByStatus(results []rules.EvaluationResult, status rules.Status) []rul
 
 	return filtered
 }
-
