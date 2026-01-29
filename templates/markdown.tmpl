@@ -17,13 +17,26 @@
 
 {{ range .RedResults }}
 ### {{.RuleName}}
-**Status:** RED
-**Message:** {{.Message}}
+#### Status
+RED
+
+#### Message
+{{.Message}}
+{{ if gt (len .Details) 0 }}
+#### Details
+{{ range .Details }}
+- {{ . }}
+{{ end }}
+{{ end }}
 {{ if .PotentialActionUser }}
-**Potential action:** {{.PotentialActionUser}}
+#### Potential action
+{{.PotentialActionUser}}
 {{ end }}
 {{ if .PotentialActionDeveloper }}
-**Potential action (developer):** {{.PotentialActionDeveloper}}
+#### Potential action (developer)
+{{.PotentialActionDeveloper}}
+{{ end }}
+
 {{ end }}
 
 {{ end }}
@@ -34,13 +47,26 @@
 
 {{ range .YellowResults }}
 ### {{.RuleName}}
-**Status:** YELLOW
-**Message:** {{.Message}}
+#### Status
+YELLOW
+
+#### Message
+{{.Message}}
+{{ if gt (len .Details) 0 }}
+#### Details
+{{ range .Details }}
+- {{ . }}
+{{ end }}
+{{ end }}
 {{ if .PotentialActionUser }}
-**Potential action:** {{.PotentialActionUser}}
+#### Potential action
+{{.PotentialActionUser}}
 {{ end }}
 {{ if .PotentialActionDeveloper }}
-**Potential action (developer):** {{.PotentialActionDeveloper}}
+#### Potential action (developer)
+{{.PotentialActionDeveloper}}
+{{ end }}
+
 {{ end }}
 
 {{ end }}
@@ -52,3 +78,4 @@
 - **{{.RuleName}}:** {{.Message}}
 {{ end }}
 
+{{ end }}

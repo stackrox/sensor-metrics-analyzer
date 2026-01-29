@@ -201,9 +201,11 @@ func handleAnalyzeBoth(cfg *Config) http.HandlerFunc {
 			response.Error = fmt.Sprintf("Analysis failed: %v", err)
 		} else {
 			response.Console = reporter.GenerateConsole(report)
-			response.Markdown = reporter.GenerateMarkdown(report, cfg.TemplatePath)
-			if response.Markdown == "" {
-				response.Error = "Markdown generation returned empty content"
+			markdown, mdErr := reporter.GenerateMarkdown(report, cfg.TemplatePath)
+			if mdErr != nil {
+				response.Error = fmt.Sprintf("Markdown generation failed: %v", mdErr)
+			} else {
+				response.Markdown = markdown
 			}
 		}
 

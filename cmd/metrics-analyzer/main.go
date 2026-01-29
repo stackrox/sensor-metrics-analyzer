@@ -119,10 +119,12 @@ func analyzeCommand() {
 			return
 		}
 	case "markdown":
-		outputContent = reporter.GenerateMarkdown(report, *templatePath)
-		if outputContent == "" {
-			fmt.Fprintf(os.Stderr, "Warning: Markdown generation returned empty content\n")
+		markdown, mdErr := reporter.GenerateMarkdown(report, *templatePath)
+		if mdErr != nil {
+			fmt.Fprintf(os.Stderr, "Markdown generation failed: %v\n", mdErr)
+			os.Exit(1)
 		}
+		outputContent = markdown
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown format: %s\n", *format)
 		os.Exit(1)

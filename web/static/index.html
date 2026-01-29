@@ -194,6 +194,41 @@
             display: block;
         }
 
+        .markdown-rendered {
+            background: #ffffff;
+            color: #2c3e50;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #ecf0f1;
+        }
+
+        .markdown-rendered h1,
+        .markdown-rendered h2,
+        .markdown-rendered h3,
+        .markdown-rendered h4 {
+            margin: 16px 0 8px;
+        }
+
+        .markdown-rendered p {
+            margin: 8px 0;
+        }
+
+        .markdown-rendered code {
+            background: #f2f4f6;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+        }
+
+        .markdown-rendered pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 16px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
         pre {
             background: #2c3e50;
             color: #ecf0f1;
@@ -261,18 +296,20 @@
 
         <div class="results" id="results">
             <div class="tabs">
-                <button class="tab active" data-tab="console">Console Output</button>
-                <button class="tab" data-tab="markdown">Markdown Report</button>
+                <button class="tab" data-tab="console">Console Output</button>
+                <button class="tab active" data-tab="markdown">Markdown Report</button>
             </div>
-            <div class="tab-content active" id="consoleTab">
+            <div class="tab-content" id="consoleTab">
                 <pre id="consoleOutput"></pre>
             </div>
-            <div class="tab-content" id="markdownTab">
-                <pre id="markdownOutput"></pre>
+            <div class="tab-content active" id="markdownTab">
+                <div id="markdownRendered" class="markdown-rendered"></div>
+                <pre id="markdownOutput" style="margin-top: 16px;"></pre>
             </div>
         </div>
     </div>
 
+    <script src="vendor/marked.min.js" defer></script>
     <script>
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
@@ -283,6 +320,7 @@
         const resultsDiv = document.getElementById('results');
         const consoleOutput = document.getElementById('consoleOutput');
         const markdownOutput = document.getElementById('markdownOutput');
+        const markdownRendered = document.getElementById('markdownRendered');
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const versionValue = document.getElementById('versionValue');
@@ -390,8 +428,14 @@
                 }
 
                 if (data.markdown) {
+                    if (window.marked && typeof window.marked.parse === 'function') {
+                        markdownRendered.innerHTML = window.marked.parse(data.markdown);
+                    } else {
+                        markdownRendered.textContent = data.markdown;
+                    }
                     markdownOutput.textContent = data.markdown;
                 } else {
+                    markdownRendered.textContent = 'No markdown output available';
                     markdownOutput.textContent = 'No markdown output available';
                 }
 
