@@ -13,7 +13,7 @@ func EvaluatePercentage(rule rules.Rule, metrics parser.MetricsData, loadLevel r
 	result := rules.EvaluationResult{
 		RuleName:  rule.DisplayName,
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 

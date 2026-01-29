@@ -65,8 +65,21 @@ func GenerateConsole(report rules.AnalysisReport) string {
 			result.WriteString(color.New(color.Bold).Sprintf("%s\n", r.RuleName))
 			result.WriteString(color.RedString("  Status: RED\n"))
 			result.WriteString(fmt.Sprintf("  Message: %s\n", r.Message))
-			if r.Remediation != "" {
-				result.WriteString(color.New(color.FgYellow).Sprintf("  Recommended Action: %s\n", r.Remediation))
+			if len(r.Details) > 0 {
+				result.WriteString(color.New(color.FgYellow).Sprint("  Details:\n"))
+				for _, detail := range r.Details {
+					result.WriteString(fmt.Sprintf("    %s\n", detail))
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result.WriteString(fmt.Sprintf("  %s %s\n",
+					color.New(color.FgYellow).Sprint("Potential action:"),
+					r.PotentialActionUser))
+			}
+			if r.PotentialActionDeveloper != "" {
+				result.WriteString(fmt.Sprintf("  %s %s\n",
+					color.New(color.FgYellow).Sprint("Potential action (developer):"),
+					r.PotentialActionDeveloper))
 			}
 			result.WriteString("\n")
 		}
@@ -80,8 +93,21 @@ func GenerateConsole(report rules.AnalysisReport) string {
 			result.WriteString(color.New(color.Bold).Sprintf("%s\n", r.RuleName))
 			result.WriteString(color.YellowString("  Status: YELLOW\n"))
 			result.WriteString(fmt.Sprintf("  Message: %s\n", r.Message))
-			if r.Remediation != "" {
-				result.WriteString(color.New(color.FgYellow).Sprintf("  Recommended Action: %s\n", r.Remediation))
+			if len(r.Details) > 0 {
+				result.WriteString(color.New(color.FgYellow).Sprint("  Details:\n"))
+				for _, detail := range r.Details {
+					result.WriteString(fmt.Sprintf("    %s\n", detail))
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result.WriteString(fmt.Sprintf("  %s %s\n",
+					color.New(color.FgYellow).Sprint("Potential action:"),
+					r.PotentialActionUser))
+			}
+			if r.PotentialActionDeveloper != "" {
+				result.WriteString(fmt.Sprintf("  %s %s\n",
+					color.New(color.FgYellow).Sprint("Potential action (developer):"),
+					r.PotentialActionDeveloper))
 			}
 			result.WriteString("\n")
 		}

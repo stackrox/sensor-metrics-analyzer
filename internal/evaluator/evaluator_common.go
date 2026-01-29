@@ -108,10 +108,27 @@ func EvaluateAllRules(rulesList []rules.Rule, metrics parser.MetricsData, loadLe
 			result = EvaluateCorrelation(rule, metrics, result)
 		}
 
-		// Add remediation
+		// Add potential actions (user-facing)
 		result.Remediation = getRemediation(rule, result.Status)
+		result.PotentialActionUser = result.Remediation
 		result.Timestamp = time.Now()
 
+		report.Results = append(report.Results, result)
+
+		// Update summary
+		switch result.Status {
+		case rules.StatusRed:
+			report.Summary.RedCount++
+		case rules.StatusYellow:
+			report.Summary.YellowCount++
+		case rules.StatusGreen:
+			report.Summary.GreenCount++
+		}
+	}
+
+	// Apply general histogram +Inf overflow rule to all histogram metrics
+	infOverflowResults := EvaluateHistogramInfOverflow(metrics, loadLevel)
+	for _, result := range infOverflowResults {
 		report.Results = append(report.Results, result)
 
 		// Update summary

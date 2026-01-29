@@ -189,13 +189,15 @@ type LoadDetectionThreshold struct {
 
 // EvaluationResult represents the result of evaluating a rule
 type EvaluationResult struct {
-	RuleName    string
-	Status      Status
-	Message     string
-	Value       float64
-	Details     map[string]interface{}
-	Remediation string // Suggested remediation action (if available)
-	Timestamp   time.Time
+	RuleName                 string
+	Status                   Status
+	Message                  string
+	Value                    float64
+	Details                  []string
+	Remediation              string // Legacy field (use PotentialActionUser/Developer)
+	PotentialActionUser      string
+	PotentialActionDeveloper string
+	Timestamp                time.Time
 }
 
 // AnalysisReport contains all evaluation results

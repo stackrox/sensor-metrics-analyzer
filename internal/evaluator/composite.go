@@ -14,7 +14,7 @@ func EvaluateComposite(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 	result := rules.EvaluationResult{
 		RuleName:  rule.DisplayName,
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 
@@ -33,7 +33,7 @@ func EvaluateComposite(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 		}
 		value, _ := metric.GetSingleValue()
 		metricValues[metricDef.Name] = value
-		result.Details[metricDef.Name] = value
+		result.Details = append(result.Details, fmt.Sprintf("%s: %.3f", metricDef.Name, value))
 	}
 
 	// Evaluate checks in order

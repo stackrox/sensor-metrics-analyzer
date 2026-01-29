@@ -13,7 +13,7 @@ func EvaluateCacheHit(rule rules.Rule, metrics parser.MetricsData, loadLevel rul
 	result := rules.EvaluationResult{
 		RuleName:  rule.DisplayName,
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 
@@ -80,12 +80,13 @@ func EvaluateCacheHit(rule rules.Rule, metrics parser.MetricsData, loadLevel rul
 		"hits":   hits,
 		"misses": misses,
 	})
-	if result.Status == rules.StatusYellow {
+	switch result.Status {
+	case rules.StatusYellow:
 		result.Message = interpolate(rule.Messages.Yellow, hitRate, map[string]interface{}{
 			"hits":   hits,
 			"misses": misses,
 		})
-	} else if result.Status == rules.StatusRed {
+	case rules.StatusRed:
 		result.Message = interpolate(rule.Messages.Red, hitRate, map[string]interface{}{
 			"hits":   hits,
 			"misses": misses,

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -195,6 +196,32 @@ func (m *Metric) GetHistogramBuckets() []HistogramBucket {
 	return buckets
 }
 
+// GetHistogramInfBucketCount returns the count from the +Inf bucket
+func (m *Metric) GetHistogramInfBucketCount() (float64, bool) {
+	for _, v := range m.Values {
+		if leStr, exists := v.Labels["le"]; exists && leStr == "+Inf" {
+			return v.Value, true
+		}
+	}
+	return 0, false
+}
+
+// GetHistogramHighestFiniteBucket returns the highest finite bucket's le value and count
+func (m *Metric) GetHistogramHighestFiniteBucket() (le float64, count float64, found bool) {
+	buckets := m.GetHistogramBuckets()
+	if len(buckets) == 0 {
+		return 0, 0, false
+	}
+
+	// Sort buckets by le value to find the highest
+	sort.Slice(buckets, func(i, j int) bool {
+		return buckets[i].Le < buckets[j].Le
+	})
+
+	highest := buckets[len(buckets)-1]
+	return highest.Le, highest.Count, true
+}
+
 // GetHistogramSum returns the _sum value for a histogram metric
 func (md MetricsData) GetHistogramSum(baseName string) (float64, bool) {
 	sumMetric := baseName + "_sum"
@@ -241,4 +268,33 @@ func (md MetricsData) DetectACSVersion() (string, bool) {
 	}
 
 	return "", false
+}
+
+// GetHistogramBaseNames returns a list of base histogram metric names (without _bucket, _sum, _count suffixes)
+func (md MetricsData) GetHistogramBaseNames() []string {
+	histogramBases := make(map[string]bool)
+
+	for metricName, metric := range md {
+		// Check if this is a histogram type metric
+		if metric.Type == "histogram" {
+			// Extract base name by removing _bucket, _sum, _count suffixes
+			baseName := metricName
+			if strings.HasSuffix(baseName, "_bucket") {
+				baseName = strings.TrimSuffix(baseName, "_bucket")
+			} else if strings.HasSuffix(baseName, "_sum") {
+				baseName = strings.TrimSuffix(baseName, "_sum")
+			} else if strings.HasSuffix(baseName, "_count") {
+				baseName = strings.TrimSuffix(baseName, "_count")
+			}
+			histogramBases[baseName] = true
+		}
+	}
+
+	// Convert map to slice and sort for consistent output
+	result := make([]string, 0, len(histogramBases))
+	for baseName := range histogramBases {
+		result = append(result, baseName)
+	}
+	sort.Strings(result)
+	return result
 }

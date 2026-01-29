@@ -15,7 +15,7 @@ func EvaluateGauge(rule rules.Rule, metrics parser.MetricsData, loadLevel rules.
 	result := rules.EvaluationResult{
 		RuleName:  rule.MetricName,
 		Status:    rules.StatusGreen,
-		Details:   make(map[string]interface{}),
+		Details:   []string{},
 		Timestamp: time.Now(),
 	}
 
@@ -98,20 +98,18 @@ func interpolate(template string, value float64, extras map[string]interface{}) 
 	})
 
 	// Replace other placeholders from extras map
-	if extras != nil {
-		for key, val := range extras {
-			// Handle format specifiers
-			keyRe := regexp.MustCompile(`\{` + regexp.QuoteMeta(key) + `(?::[^}]+)?\}`)
-			result = keyRe.ReplaceAllStringFunc(result, func(match string) string {
-				if strings.Contains(match, ":") {
-					formatMatch := regexp.MustCompile(`:([^}]+)`)
-					if fm := formatMatch.FindStringSubmatch(match); len(fm) == 2 {
-						return fmt.Sprintf("%"+fm[1], val)
-					}
+	for key, val := range extras {
+		// Handle format specifiers
+		keyRe := regexp.MustCompile(`\{` + regexp.QuoteMeta(key) + `(?::[^}]+)?\}`)
+		result = keyRe.ReplaceAllStringFunc(result, func(match string) string {
+			if strings.Contains(match, ":") {
+				formatMatch := regexp.MustCompile(`:([^}]+)`)
+				if fm := formatMatch.FindStringSubmatch(match); len(fm) == 2 {
+					return fmt.Sprintf("%"+fm[1], val)
 				}
-				return fmt.Sprintf("%v", val)
-			})
-		}
+			}
+			return fmt.Sprintf("%v", val)
+		})
 	}
 
 	return result

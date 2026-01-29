@@ -47,8 +47,17 @@ func generateMarkdownDefault(report rules.AnalysisReport) string {
 			result += "### " + r.RuleName + "\n\n"
 			result += "**Status:** RED\n"
 			result += "**Message:** " + r.Message + "\n"
-			if r.Remediation != "" {
-				result += "**Recommended Action:** " + r.Remediation + "\n"
+			if len(r.Details) > 0 {
+				result += "**Details:**\n"
+				for _, detail := range r.Details {
+					result += "- " + detail + "\n"
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result += "**Potential action:** " + r.PotentialActionUser + "\n"
+			}
+			if r.PotentialActionDeveloper != "" {
+				result += "**Potential action (developer):** " + r.PotentialActionDeveloper + "\n"
 			}
 			result += "\n"
 		}
@@ -62,8 +71,17 @@ func generateMarkdownDefault(report rules.AnalysisReport) string {
 			result += "### " + r.RuleName + "\n\n"
 			result += "**Status:** YELLOW\n"
 			result += "**Message:** " + r.Message + "\n"
-			if r.Remediation != "" {
-				result += "**Recommended Action:** " + r.Remediation + "\n"
+			if len(r.Details) > 0 {
+				result += "**Details:**\n"
+				for _, detail := range r.Details {
+					result += "- " + detail + "\n"
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result += "**Potential action:** " + r.PotentialActionUser + "\n"
+			}
+			if r.PotentialActionDeveloper != "" {
+				result += "**Potential action (developer):** " + r.PotentialActionDeveloper + "\n"
 			}
 			result += "\n"
 		}
