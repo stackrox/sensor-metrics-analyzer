@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/fatih/color"
@@ -65,8 +66,22 @@ func GenerateConsole(report rules.AnalysisReport) string {
 			result.WriteString(color.New(color.Bold).Sprintf("%s\n", r.RuleName))
 			result.WriteString(color.RedString("  Status: RED\n"))
 			result.WriteString(fmt.Sprintf("  Message: %s\n", r.Message))
-			if r.Remediation != "" {
-				result.WriteString(color.New(color.FgYellow).Sprintf("  Recommended Action: %s\n", r.Remediation))
+			if len(r.Details) > 0 {
+				result.WriteString("  Details:\n")
+				keys := make([]string, 0, len(r.Details))
+				for k := range r.Details {
+					keys = append(keys, k)
+				}
+				slices.Sort(keys)
+				for _, k := range keys {
+					result.WriteString(fmt.Sprintf("    %s: %v\n", k, r.Details[k]))
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result.WriteString(color.New(color.FgYellow).Sprintf("  Potential action: %s\n", r.PotentialActionUser))
+			}
+			if r.PotentialActionDeveloper != "" {
+				result.WriteString(color.New(color.FgYellow).Sprintf("  Potential action (developer): %s\n", r.PotentialActionDeveloper))
 			}
 			result.WriteString("\n")
 		}
@@ -80,8 +95,22 @@ func GenerateConsole(report rules.AnalysisReport) string {
 			result.WriteString(color.New(color.Bold).Sprintf("%s\n", r.RuleName))
 			result.WriteString(color.YellowString("  Status: YELLOW\n"))
 			result.WriteString(fmt.Sprintf("  Message: %s\n", r.Message))
-			if r.Remediation != "" {
-				result.WriteString(color.New(color.FgYellow).Sprintf("  Recommended Action: %s\n", r.Remediation))
+			if len(r.Details) > 0 {
+				result.WriteString("  Details:\n")
+				keys := make([]string, 0, len(r.Details))
+				for k := range r.Details {
+					keys = append(keys, k)
+				}
+				slices.Sort(keys)
+				for _, k := range keys {
+					result.WriteString(fmt.Sprintf("    %s: %v\n", k, r.Details[k]))
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result.WriteString(color.New(color.FgYellow).Sprintf("  Potential action: %s\n", r.PotentialActionUser))
+			}
+			if r.PotentialActionDeveloper != "" {
+				result.WriteString(color.New(color.FgYellow).Sprintf("  Potential action (developer): %s\n", r.PotentialActionDeveloper))
 			}
 			result.WriteString("\n")
 		}

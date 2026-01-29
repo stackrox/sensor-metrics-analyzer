@@ -11,47 +11,44 @@
 - 🟡 **YELLOW:** {{.Summary.YellowCount}} metrics
 - 🟢 **GREEN:** {{.Summary.GreenCount}} metrics
 
-{{if gt .Summary.RedCount 0}}
+{{ if gt (len .RedResults) 0 }}
+
 ## 🔴 Critical Issues
 
-{{range .Results}}
-{{if eq .Status "RED"}}
+{{ range .RedResults }}
 ### {{.RuleName}}
-
 **Status:** RED
 **Message:** {{.Message}}
-{{if .Remediation}}
-**Recommended Action:** {{.Remediation}}
-{{end}}
+{{ if .PotentialActionUser }}
+**Potential action:** {{.PotentialActionUser}}
+{{ end }}
+{{ if .PotentialActionDeveloper }}
+**Potential action (developer):** {{.PotentialActionDeveloper}}
+{{ end }}
 
-{{end}}
-{{end}}
-{{end}}
+{{ end }}
 
-{{if gt .Summary.YellowCount 0}}
+{{ if gt (len .YellowResults) 0 }}
+
 ## 🟡 Warnings
 
-{{range .Results}}
-{{if eq .Status "YELLOW"}}
+{{ range .YellowResults }}
 ### {{.RuleName}}
-
 **Status:** YELLOW
 **Message:** {{.Message}}
-{{if .Remediation}}
-**Recommended Action:** {{.Remediation}}
-{{end}}
+{{ if .PotentialActionUser }}
+**Potential action:** {{.PotentialActionUser}}
+{{ end }}
+{{ if .PotentialActionDeveloper }}
+**Potential action (developer):** {{.PotentialActionDeveloper}}
+{{ end }}
 
-{{end}}
-{{end}}
-{{end}}
+{{ end }}
 
-{{if gt .Summary.GreenCount 0}}
+{{ if gt (len .GreenResults) 0 }}
+
 ## 🟢 Healthy Metrics
-
-{{range .Results}}
-{{if eq .Status "GREEN"}}
+{{ range .GreenResults }}
 - **{{.RuleName}}:** {{.Message}}
-{{end}}
-{{end}}
-{{end}}
+{{ end }}
 

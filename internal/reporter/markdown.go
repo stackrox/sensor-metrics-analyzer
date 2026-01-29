@@ -47,8 +47,22 @@ func generateMarkdownDefault(report rules.AnalysisReport) string {
 			result += "### " + r.RuleName + "\n\n"
 			result += "**Status:** RED\n"
 			result += "**Message:** " + r.Message + "\n"
-			if r.Remediation != "" {
-				result += "**Recommended Action:** " + r.Remediation + "\n"
+			if len(r.Details) > 0 {
+				result += "**Details:**\n"
+				keys := make([]string, 0, len(r.Details))
+				for k := range r.Details {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				for _, k := range keys {
+					result += "- " + k + ": " + fmt.Sprintf("%v", r.Details[k]) + "\n"
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result += "**Potential action:** " + r.PotentialActionUser + "\n"
+			}
+			if r.PotentialActionDeveloper != "" {
+				result += "**Potential action (developer):** " + r.PotentialActionDeveloper + "\n"
 			}
 			result += "\n"
 		}
@@ -62,8 +76,22 @@ func generateMarkdownDefault(report rules.AnalysisReport) string {
 			result += "### " + r.RuleName + "\n\n"
 			result += "**Status:** YELLOW\n"
 			result += "**Message:** " + r.Message + "\n"
-			if r.Remediation != "" {
-				result += "**Recommended Action:** " + r.Remediation + "\n"
+			if len(r.Details) > 0 {
+				result += "**Details:**\n"
+				keys := make([]string, 0, len(r.Details))
+				for k := range r.Details {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				for _, k := range keys {
+					result += "- " + k + ": " + fmt.Sprintf("%v", r.Details[k]) + "\n"
+				}
+			}
+			if r.PotentialActionUser != "" {
+				result += "**Potential action:** " + r.PotentialActionUser + "\n"
+			}
+			if r.PotentialActionDeveloper != "" {
+				result += "**Potential action (developer):** " + r.PotentialActionDeveloper + "\n"
 			}
 			result += "\n"
 		}

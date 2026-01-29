@@ -25,8 +25,7 @@ func Run(report rules.AnalysisReport) error {
 
 	p := tea.NewProgram(
 		model,
-		tea.WithAltScreen(),       // Use alternate screen buffer
-		tea.WithMouseCellMotion(), // Enable mouse support
+		// Avoid alternate screen and mouse capture so text is copyable
 	)
 
 	if _, err := p.Run(); err != nil {
@@ -43,8 +42,7 @@ func RunWithOutput(report rules.AnalysisReport) (*Model, error) {
 
 	p := tea.NewProgram(
 		model,
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
+		// Avoid alternate screen and mouse capture so text is copyable
 	)
 
 	finalModel, err := p.Run()

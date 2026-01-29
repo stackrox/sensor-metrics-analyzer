@@ -3,6 +3,8 @@ package evaluator
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/stackrox/sensor-metrics-analyzer/internal/parser"
@@ -92,4 +94,180 @@ func EvaluateHistogram(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 	}
 
 	return result
+}
+
+// EvaluateHistogramInfOverflow evaluates all histogram metrics for +Inf bucket overflow
+// This is a general rule that applies to any histogram metric
+func EvaluateHistogramInfOverflow(metrics parser.MetricsData, loadLevel rules.LoadLevel) []rules.EvaluationResult {
+	var results []rules.EvaluationResult
+
+	// Get all histogram base names
+	histogramBases := metrics.GetHistogramBaseNames()
+
+	for _, baseName := range histogramBases {
+		result := evaluateSingleHistogramInfOverflow(baseName, metrics)
+		if result != nil {
+			results = append(results, *result)
+		}
+	}
+
+	return results
+}
+
+// evaluateSingleHistogramInfOverflow evaluates a single histogram metric for +Inf overflow
+// Handles multiple label combinations (series) by evaluating each separately and reporting the worst case
+func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsData) *rules.EvaluationResult {
+	result := &rules.EvaluationResult{
+		RuleName:  baseName + " (+Inf overflow check)",
+		Status:    rules.StatusGreen,
+		Details:   make(map[string]interface{}),
+		Timestamp: time.Now(),
+	}
+
+	// Get histogram buckets
+	bucketMetricName := baseName + "_bucket"
+	bucketMetric, exists := metrics.GetMetric(bucketMetricName)
+	if !exists || len(bucketMetric.Values) == 0 {
+		return nil // Skip if no buckets found
+	}
+
+	// Group buckets by label combination (excluding "le" label)
+	// Each label combination represents a separate time series
+	seriesBuckets := make(map[string][]parser.MetricValue)
+	for _, v := range bucketMetric.Values {
+		// Create a key from all labels except "le"
+		seriesKey := getSeriesKey(v.Labels)
+		seriesBuckets[seriesKey] = append(seriesBuckets[seriesKey], v)
+	}
+
+	// Track worst case across all series
+	var worstInfPercentage float64
+	var worstInfObservations float64
+	var worstTotalCount float64
+	var worstHighestFiniteLe float64
+	var worstStatus rules.Status
+
+	hasAnyData := false
+
+	// Evaluate each series separately
+	for _, buckets := range seriesBuckets {
+		// Find +Inf bucket and highest finite bucket for this series
+		var infCount float64
+		var highestFiniteLe float64
+		var highestFiniteCount float64
+		hasInf := false
+		hasFinite := false
+
+		for _, v := range buckets {
+			if leStr, exists := v.Labels["le"]; exists {
+				if leStr == "+Inf" {
+					infCount = v.Value
+					hasInf = true
+				} else if le, err := strconv.ParseFloat(leStr, 64); err == nil {
+					if !hasFinite || le > highestFiniteLe {
+						highestFiniteLe = le
+						highestFiniteCount = v.Value
+						hasFinite = true
+					}
+				}
+			}
+		}
+
+		if !hasInf || !hasFinite || infCount == 0 {
+			continue
+		}
+
+		hasAnyData = true
+
+		// Calculate the percentage of observations in +Inf bucket for this series
+		// Observations in +Inf = totalCount - highestFiniteCount
+		infObservations := infCount - highestFiniteCount
+		if infObservations < 0 {
+			// This can happen if there are data inconsistencies, skip this series
+			continue
+		}
+		infPercentage := (infObservations / infCount) * 100.0
+
+		// Track worst case
+		if infPercentage > worstInfPercentage {
+			worstInfPercentage = infPercentage
+			worstInfObservations = infObservations
+			worstTotalCount = infCount
+			worstHighestFiniteLe = highestFiniteLe
+
+			// Determine status for this series
+			if infPercentage > 50.0 {
+				worstStatus = rules.StatusRed
+			} else if infPercentage > 25.0 {
+				worstStatus = rules.StatusYellow
+			} else {
+				worstStatus = rules.StatusGreen
+			}
+		}
+	}
+
+	if !hasAnyData {
+		return nil
+	}
+
+	result.Status = worstStatus
+	result.Details["Total Number of Observations"] = formatHumanNumber(worstTotalCount)
+	result.Details["Observations in +Inf bucket"] = formatHumanNumber(worstInfObservations)
+	result.Details["Percentage of observations in +Inf bucket"] = formatHumanNumber(worstInfPercentage) + " %"
+	result.Details["Highest non-infinity bucket"] = formatHumanNumber(worstHighestFiniteLe) + " units"
+
+	// Build message based on worst case
+	result.Message = fmt.Sprintf("%s%% of observations in +Inf bucket (acceptable). Highest non-infinity bucket: %s",
+		formatHumanNumber(worstInfPercentage), formatHumanNumber(worstHighestFiniteLe))
+	if worstInfPercentage > 25.0 {
+		result.Message = fmt.Sprintf("%s%% of observations are in +Inf bucket (%s out of %s). "+
+			"This indicates the metric designer likely didn't expect processing durations to be so high. "+
+			"Highest non-infinity bucket: %s",
+			formatHumanNumber(worstInfPercentage),
+			formatHumanNumber(worstInfObservations),
+			formatHumanNumber(worstTotalCount),
+			formatHumanNumber(worstHighestFiniteLe))
+		result.PotentialActionUser = fmt.Sprintf("Further investigation is required to understand why values exceed %s. "+
+			"Check if there are other alerts for this specific metric with more precise context.", formatHumanNumber(worstHighestFiniteLe))
+		result.PotentialActionDeveloper = "Review code paths and metric instrumentation to confirm whether observed latencies are expected."
+	}
+	return result
+}
+
+// getSeriesKey creates a key from labels excluding "le" to group buckets by series
+func getSeriesKey(labels map[string]string) string {
+	var keys []string
+	for k, v := range labels {
+		if k != "le" {
+			keys = append(keys, k+"="+v)
+		}
+	}
+	sort.Strings(keys)
+	return strings.Join(keys, ",")
+}
+
+func formatHumanNumber(value float64) string {
+	raw := strconv.FormatFloat(value, 'f', -1, 64)
+	sign := ""
+	if strings.HasPrefix(raw, "-") {
+		sign = "-"
+		raw = strings.TrimPrefix(raw, "-")
+	}
+	parts := strings.SplitN(raw, ".", 2)
+	intPart := parts[0]
+	var fracPart string
+	if len(parts) == 2 && parts[1] != "" {
+		fracPart = parts[1]
+	}
+	var grouped strings.Builder
+	for i, r := range intPart {
+		if i > 0 && (len(intPart)-i)%3 == 0 {
+			grouped.WriteString(" ")
+		}
+		grouped.WriteRune(r)
+	}
+	if fracPart != "" {
+		return sign + grouped.String() + "." + fracPart
+	}
+	return sign + grouped.String()
 }

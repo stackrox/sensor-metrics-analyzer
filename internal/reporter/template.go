@@ -73,5 +73,17 @@ func GenerateMarkdownFromTemplate(report rules.AnalysisReport, templatePath stri
 		return "", err
 	}
 
-	return ExecuteTemplate(tmpl, report)
+	data := struct {
+		rules.AnalysisReport
+		RedResults    []rules.EvaluationResult
+		YellowResults []rules.EvaluationResult
+		GreenResults  []rules.EvaluationResult
+	}{
+		AnalysisReport: report,
+		RedResults:     filterByStatus(report.Results, rules.StatusRed),
+		YellowResults:  filterByStatus(report.Results, rules.StatusYellow),
+		GreenResults:   filterByStatus(report.Results, rules.StatusGreen),
+	}
+
+	return ExecuteTemplate(tmpl, data)
 }

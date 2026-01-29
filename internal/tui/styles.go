@@ -122,8 +122,7 @@ var (
 
 	remediationStyle = lipgloss.NewStyle().
 				Foreground(colorYellow).
-				Italic(true).
-				MarginTop(1)
+				Italic(true)
 
 	// Help bar
 	helpStyle = lipgloss.NewStyle().

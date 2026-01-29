@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stackrox/sensor-metrics-analyzer/internal/parser"
@@ -399,6 +400,143 @@ func TestIsRuleApplicable(t *testing.T) {
 
 			if got != tt.want {
 				t.Errorf("IsRuleApplicable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEvaluateHistogramInfOverflow(t *testing.T) {
+	tests := map[string]struct {
+		metrics    parser.MetricsData
+		wantStatus map[string]rules.Status // metric name -> expected status
+		wantCount  int                     // expected number of results
+	}{
+		"should return red status when >50% in +Inf": {
+			metrics: parser.MetricsData{
+				"test_histogram_bucket": &parser.Metric{
+					Name: "test_histogram_bucket",
+					Type: "histogram",
+					Values: []parser.MetricValue{
+						{Value: 10, Labels: map[string]string{"le": "0.1"}},
+						{Value: 20, Labels: map[string]string{"le": "0.5"}},
+						{Value: 30, Labels: map[string]string{"le": "1.0"}},
+						{Value: 100, Labels: map[string]string{"le": "+Inf"}}, // 70 in +Inf (70%)
+					},
+				},
+			},
+			wantStatus: map[string]rules.Status{
+				"test_histogram (+Inf overflow check)": rules.StatusRed,
+			},
+			wantCount: 1,
+		},
+		"should return yellow status when >25% but <=50% in +Inf": {
+			metrics: parser.MetricsData{
+				"test_histogram_bucket": &parser.Metric{
+					Name: "test_histogram_bucket",
+					Type: "histogram",
+					Values: []parser.MetricValue{
+						{Value: 10, Labels: map[string]string{"le": "0.1"}},
+						{Value: 20, Labels: map[string]string{"le": "0.5"}},
+						{Value: 30, Labels: map[string]string{"le": "1.0"}},
+						{Value: 50, Labels: map[string]string{"le": "+Inf"}}, // 20 in +Inf (40%)
+					},
+				},
+			},
+			wantStatus: map[string]rules.Status{
+				"test_histogram (+Inf overflow check)": rules.StatusYellow,
+			},
+			wantCount: 1,
+		},
+		"should return green status when <=25% in +Inf": {
+			metrics: parser.MetricsData{
+				"test_histogram_bucket": &parser.Metric{
+					Name: "test_histogram_bucket",
+					Type: "histogram",
+					Values: []parser.MetricValue{
+						{Value: 10, Labels: map[string]string{"le": "0.1"}},
+						{Value: 20, Labels: map[string]string{"le": "0.5"}},
+						{Value: 30, Labels: map[string]string{"le": "1.0"}},
+						{Value: 35, Labels: map[string]string{"le": "+Inf"}}, // 5 in +Inf (14.3%)
+					},
+				},
+			},
+			wantStatus: map[string]rules.Status{
+				"test_histogram (+Inf overflow check)": rules.StatusGreen,
+			},
+			wantCount: 1,
+		},
+		"should skip histogram without +Inf bucket": {
+			metrics: parser.MetricsData{
+				"test_histogram_bucket": &parser.Metric{
+					Name: "test_histogram_bucket",
+					Type: "histogram",
+					Values: []parser.MetricValue{
+						{Value: 10, Labels: map[string]string{"le": "0.1"}},
+						{Value: 20, Labels: map[string]string{"le": "0.5"}},
+					},
+				},
+			},
+			wantStatus: map[string]rules.Status{},
+			wantCount:  0,
+		},
+		"should handle multiple histograms": {
+			metrics: parser.MetricsData{
+				"hist1_bucket": &parser.Metric{
+					Name: "hist1_bucket",
+					Type: "histogram",
+					Values: []parser.MetricValue{
+						{Value: 10, Labels: map[string]string{"le": "1.0"}},
+						{Value: 100, Labels: map[string]string{"le": "+Inf"}}, // 90 in +Inf (90%)
+					},
+				},
+				"hist2_bucket": &parser.Metric{
+					Name: "hist2_bucket",
+					Type: "histogram",
+					Values: []parser.MetricValue{
+						{Value: 10, Labels: map[string]string{"le": "1.0"}},
+						{Value: 15, Labels: map[string]string{"le": "+Inf"}}, // 5 in +Inf (33%)
+					},
+				},
+			},
+			wantStatus: map[string]rules.Status{
+				"hist1 (+Inf overflow check)": rules.StatusRed,
+				"hist2 (+Inf overflow check)": rules.StatusYellow,
+			},
+			wantCount: 2,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			results := EvaluateHistogramInfOverflow(tt.metrics, rules.LoadLevelMedium)
+
+			if len(results) != tt.wantCount {
+				t.Errorf("EvaluateHistogramInfOverflow() returned %d results, want %d", len(results), tt.wantCount)
+			}
+
+			for _, result := range results {
+				wantStatus, exists := tt.wantStatus[result.RuleName]
+				if !exists {
+					t.Errorf("Unexpected result for metric %s", result.RuleName)
+					continue
+				}
+
+				if result.Status != wantStatus {
+					t.Errorf("EvaluateHistogramInfOverflow() for %s = %v, want %v", result.RuleName, result.Status, wantStatus)
+				}
+
+				// Verify message contains expected information
+				if result.Status != rules.StatusGreen {
+					if result.Message == "" {
+						t.Error("Message should not be empty for non-green status")
+					}
+					if !strings.Contains(result.Message, "Highest non-infinity bucket") {
+						t.Error("Message should contain 'Highest non-infinity bucket'")
+					}
+					if !strings.Contains(result.Message, "didn't expect") {
+						t.Error("Message should contain explanation about designer expectations")
+					}
+				}
 			}
 		})
 	}

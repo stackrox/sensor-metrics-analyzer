@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -210,10 +211,21 @@ func (m Model) viewDetail() string {
 	}
 	detail.WriteString("\n\n")
 
-	// Message
-	detail.WriteString(detailLabelStyle.Render("Message:\n"))
-	detail.WriteString(detailValueStyle.Render("  " + result.Message))
-	detail.WriteString("\n\n")
+	// Message (wrapped to screen width)
+	detail.WriteString(detailLabelStyle.Render("Message:"))
+	detail.WriteString("\n")
+	messageWidth := 70
+	if m.width > 0 {
+		messageWidth = m.width - 10
+		if messageWidth < 40 {
+			messageWidth = 40
+		}
+	}
+	wrappedMessage := wordWrap(result.Message, messageWidth)
+	for _, line := range strings.Split(wrappedMessage, "\n") {
+		detail.WriteString(fmt.Sprintf("  %s\n", line))
+	}
+	detail.WriteString("\n")
 
 	// Value
 	if result.Value != 0 {
@@ -222,22 +234,66 @@ func (m Model) viewDetail() string {
 		detail.WriteString("\n\n")
 	}
 
-	// Details map
+	// Details map - display all details in plain text format for easy copying
 	if len(result.Details) > 0 {
-		detail.WriteString(detailLabelStyle.Render("Details:\n"))
-		for k, v := range result.Details {
-			detail.WriteString(fmt.Sprintf("  %s: %v\n", k, v))
+		detail.WriteString(detailLabelStyle.Render("Details:"))
+		detail.WriteString("\n")
+
+		// Sort keys for consistent ordering
+		keys := make([]string, 0, len(result.Details))
+		for k := range result.Details {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		// Display details in plain text format (no ANSI codes) for easy selection/copying
+		for _, k := range keys {
+			v := result.Details[k]
+			// Format the value nicely
+			var formattedValue string
+			switch val := v.(type) {
+			case float64:
+				// Format floats with appropriate precision
+				if val >= 1000000 {
+					formattedValue = fmt.Sprintf("%.0f", val)
+				} else if val >= 1000 {
+					formattedValue = fmt.Sprintf("%.0f", val)
+				} else if val >= 1 {
+					formattedValue = fmt.Sprintf("%.2f", val)
+				} else {
+					formattedValue = fmt.Sprintf("%.4f", val)
+				}
+			case int:
+				formattedValue = fmt.Sprintf("%d", val)
+			case int64:
+				formattedValue = fmt.Sprintf("%d", val)
+			default:
+				// For other types, convert to string as-is (no truncation)
+				formattedValue = fmt.Sprintf("%v", v)
+			}
+
+			// Plain text format: key: value (completely plain text for easy copying)
+			detail.WriteString(fmt.Sprintf("  %s: %s\n", k, formattedValue))
 		}
 		detail.WriteString("\n")
 	}
 
-	// Remediation (if available and status is RED or YELLOW)
-	if result.Remediation != "" && (result.Status == "RED" || result.Status == "YELLOW") {
-		detail.WriteString(detailLabelStyle.Render("💡 Remediation:\n"))
-		// Word wrap the remediation text
-		wrapped := wordWrap(result.Remediation, 60)
+	// Potential actions (user/developer)
+	if result.PotentialActionUser != "" && (result.Status == "RED" || result.Status == "YELLOW") {
+		detail.WriteString(detailLabelStyle.Render("Potential action:"))
+		detail.WriteString("\n")
+		wrapped := wordWrap(result.PotentialActionUser, 60)
 		for _, line := range strings.Split(wrapped, "\n") {
-			detail.WriteString(remediationStyle.Render("  " + line))
+			detail.WriteString(remediationStyle.Render(fmt.Sprintf("  %s", line)))
+			detail.WriteString("\n")
+		}
+	}
+	if result.PotentialActionDeveloper != "" && (result.Status == "RED" || result.Status == "YELLOW") {
+		detail.WriteString(detailLabelStyle.Render("Potential action (developer):"))
+		detail.WriteString("\n")
+		wrapped := wordWrap(result.PotentialActionDeveloper, 60)
+		for _, line := range strings.Split(wrapped, "\n") {
+			detail.WriteString(remediationStyle.Render(fmt.Sprintf("  %s", line)))
 			detail.WriteString("\n")
 		}
 	}
