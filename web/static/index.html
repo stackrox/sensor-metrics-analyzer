@@ -305,7 +305,11 @@
                     const date = new Date(data.lastUpdate);
                     lastUpdateValue.textContent = Number.isNaN(date.getTime())
                         ? data.lastUpdate
-                        : date.toLocaleDateString();
+                        : new Intl.DateTimeFormat(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        }).format(date);
                 }
             })
             .catch(() => {
