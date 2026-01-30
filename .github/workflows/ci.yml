@@ -60,3 +60,126 @@ jobs:
       - name: Validate rules
         run: ./bin/metrics-analyzer validate ./automated-rules
 
+  container-smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Set build time
+        id: build_time
+        run: echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg VERSION="${{ steps.version.outputs.version }}" \
+            --build-arg BUILD_TIME="${{ steps.build_time.outputs.build_time }}" \
+            -t sma:ci .
+
+      - name: Start container
+        run: |
+          docker run -d --rm --name sma-ci -p 8080:8080 sma:ci
+
+      - name: Wait for readiness
+        run: |
+          for i in {1..10}; do
+            if curl -fsS http://localhost:8080/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs sma-ci
+          exit 1
+
+      - name: Check version endpoint
+        run: |
+          for i in {1..5}; do
+            if curl -fsS http://localhost:8080/version -o /tmp/version.json; then
+              if [ -s /tmp/version.json ]; then
+                break
+              fi
+            fi
+            sleep 1
+          done
+          if [ ! -s /tmp/version.json ]; then
+            echo "version response was empty"
+            cat /tmp/version.json || true
+            docker logs sma-ci || true
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          with open("/tmp/version.json") as f:
+            data = json.load(f)
+          assert "version" in data
+          assert "lastUpdate" in data
+          print("version ok")
+          PY
+
+      - name: Analyze sample metrics
+        run: |
+          curl -fsS -o /tmp/analysis.json -X POST \
+            -F "file=@testdata/fixtures/sample_metrics.txt" \
+            http://localhost:8080/api/analyze/both
+          python3 - <<'PY'
+          import json
+          with open("/tmp/analysis.json") as f:
+            data = json.load(f)
+          assert "console" in data
+          assert "markdown" in data
+          print("analysis ok")
+          PY
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs sma-ci
+
+  container-image:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Set build time
+        id: build_time
+        run: echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Quay
+        id: login
+        if: ${{ env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ env.QUAY_USERNAME }}
+          password: ${{ env.QUAY_PASSWORD }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ steps.login.conclusion == 'success' }}
+          tags: |
+            quay.io/prygiels/sma:${{ steps.version.outputs.version }}
+            quay.io/prygiels/sma:${{ github.sha }}
+            quay.io/prygiels/sma:latest
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_TIME=${{ steps.build_time.outputs.build_time }}
+

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -168,30 +167,14 @@ func handleAnalyzeBoth(cfg *Config) http.HandlerFunc {
 		}
 		defer file.Close()
 
-		// Create temporary file
-		tmpFile, err := os.CreateTemp("", "metrics-*.prom")
-		if err != nil {
-			respondError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create temp file: %v", err))
-			return
-		}
-		defer os.Remove(tmpFile.Name())
-		defer tmpFile.Close()
-
-		// Copy uploaded file to temp file
-		if _, err := io.Copy(tmpFile, file); err != nil {
-			respondError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save file: %v", err))
-			return
-		}
-		tmpFile.Close()
-
-		log.Printf("Processing file: %s (%d bytes)", header.Filename, header.Size)
+		log.Printf("Processing upload (%d bytes)", header.Size)
 
 		response := AnalyzeResponse{}
-		report, err := analyzer.AnalyzeFile(tmpFile.Name(), analyzer.Options{
+		report, err := analyzer.AnalyzeReader(file, analyzer.Options{
 			RulesDir:     cfg.RulesDir,
 			LoadLevelDir: cfg.LoadLevelDir,
 			ClusterName:  analyzer.ExtractClusterName(header.Filename),
-			Logger:       io.Discard,
+			Logger:       log.New(os.Stdout, "analyzer: ", log.LstdFlags).Writer(),
 		})
 		if err := ctx.Err(); err != nil {
 			respondError(w, http.StatusRequestTimeout, "Request timed out")

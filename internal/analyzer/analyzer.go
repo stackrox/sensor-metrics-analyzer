@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -24,6 +25,19 @@ type Options struct {
 
 // AnalyzeFile parses metrics and evaluates rules, returning the analysis report.
 func AnalyzeFile(metricsFile string, opts Options) (rules.AnalysisReport, error) {
+	if opts.ClusterName == "" {
+		opts.ClusterName = ExtractClusterName(metricsFile)
+	}
+	file, err := os.Open(metricsFile)
+	if err != nil {
+		return rules.AnalysisReport{}, err
+	}
+	defer file.Close()
+	return AnalyzeReader(file, opts)
+}
+
+// AnalyzeReader parses metrics from a reader and evaluates rules, returning the analysis report.
+func AnalyzeReader(reader io.Reader, opts Options) (rules.AnalysisReport, error) {
 	logOut := opts.Logger
 	if logOut == nil {
 		logOut = io.Discard
@@ -37,11 +51,6 @@ func AnalyzeFile(metricsFile string, opts Options) (rules.AnalysisReport, error)
 	loadLevelDir := opts.LoadLevelDir
 	if loadLevelDir == "" {
 		loadLevelDir = filepath.Join(rulesDir, "load-level")
-	}
-
-	clusterName := opts.ClusterName
-	if clusterName == "" {
-		clusterName = ExtractClusterName(metricsFile)
 	}
 
 	fmt.Fprintf(logOut, "Loading load detection rules from %s...\n", loadLevelDir)
@@ -58,8 +67,8 @@ func AnalyzeFile(metricsFile string, opts Options) (rules.AnalysisReport, error)
 	}
 	fmt.Fprintf(logOut, "Loaded %d rules\n", len(rulesList))
 
-	fmt.Fprintf(logOut, "Parsing metrics from %s...\n", metricsFile)
-	metrics, err := parser.ParseFile(metricsFile)
+	fmt.Fprintf(logOut, "Parsing metrics from reader...\n")
+	metrics, err := parser.ParseReader(reader)
 	if err != nil {
 		return rules.AnalysisReport{}, fmt.Errorf("failed to parse metrics: %w", err)
 	}
@@ -85,7 +94,7 @@ func AnalyzeFile(metricsFile string, opts Options) (rules.AnalysisReport, error)
 
 	fmt.Fprintf(logOut, "Evaluating rules...\n")
 	report := evaluator.EvaluateAllRules(rulesList, metrics, detectedLoadLevel, acsVersion)
-	report.ClusterName = clusterName
+	report.ClusterName = opts.ClusterName
 
 	return report, nil
 }
