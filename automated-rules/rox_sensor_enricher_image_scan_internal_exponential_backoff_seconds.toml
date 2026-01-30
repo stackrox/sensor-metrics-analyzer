@@ -29,7 +29,7 @@ This delay applies to each scan request being sent to scanner.
 """
 
 [remediation]
-red = "High image scan backoff duration. Check scanner connectivity and performance."
-yellow = "Monitor image scan backoff trends."
+red = "High image scan backoff duration. Check scanner connectivity and performance. Also check the `rox_sensor_scan_call_duration_milliseconds` metric."
+yellow = "Monitor image scan backoff trends. Also check the `rox_sensor_scan_call_duration_milliseconds` metric."
 
 acs_versions = ["4.7+", "4.8+", "4.9+", "4.10+"]
