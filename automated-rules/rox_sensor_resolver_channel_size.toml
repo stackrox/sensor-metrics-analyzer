@@ -1,10 +1,22 @@
 rule_type = "gauge_threshold"
 metric_name = "rox_sensor_resolver_channel_size"
 display_name = "rox_sensor_resolver_channel_size"
-description = "Resolver channel size"
-reviewed = "No, AI-generated"
-last_review_by = ""
-last_review_on = "never"
+description = """
+Resolver channel size.
+This metric is the number of elemets waiting in the Sensor’s internal queue of Kubernetes events waiting to be “resolved” 
+(enriched with details) before they can be sent onward.
+
+Here “resolving” means turning a raw Kubernetes event into a fully‑enriched deployment update that Sensor can send downstream.
+That includes:
+(1) Determining which deployments are affected by the event (the “deployment references”).
+(2) Loading the deployment from Sensor’s store and (if needed) rebuilding it with dependencies (RBAC permission level, service exposure info, local registry images).
+(3) Updating the endpoint manager for create/update.
+(4) Deciding whether to emit an event and trigger deploy‑time detection.
+"""
+
+reviewed = "Yes, by human"
+last_review_by = "Piotr"
+last_review_on = "30-01-2026"
 
 [thresholds]
 low = 10
@@ -13,12 +25,31 @@ higher_is_worse = true
 
 [messages]
 green = "{value:.0f} items queued (internal bottleneck if growing)"
-yellow = "{value:.0f} items queued (elevated)"
-red = "{value:.0f} items queued (backed up - internal processing issue)"
+yellow = """
+{value:.0f} items queued (elevated)
+
+Events take longer to process, which can make inventory/alerts lag behind what’s happening in the cluster.
+Common causes of high values:
+(1) A surge of Kubernetes events (e.g., large deployments, many changes at once).
+(2) Resolver work is slower than usual (expensive lookups/enrichment).
+(3) Resource pressure on the Sensor pod (CPU throttling, memory pressure, GC pauses).
+(4) Downstream bottleneck (later stages are slow, so resolver can’t drain its queue fast enough).
+(5) Network or Central-side slowness that indirectly backs up the pipeline.
+"""
+red = """
+{value:.0f} items queued (backed up - internal processing issue).
+
+Common causes of high values:
+(1) A surge of Kubernetes events (e.g., large deployments, many changes at once).
+(2) Resolver work is slower than usual (expensive lookups/enrichment).
+(3) Resource pressure on the Sensor pod (CPU throttling, memory pressure, GC pauses).
+(4) Downstream bottleneck (later stages are slow, so resolver can’t drain its queue fast enough).
+(5) Network or Central-side slowness that indirectly backs up the pipeline.
+"""
 
 [remediation]
 red = "Resolver channel backed up. Check internal processing bottlenecks. Review resolver performance."
 yellow = "Monitor resolver channel size trends."
 
-acs_versions = ["4.7+", "4.8+", "4.9+"]
+acs_versions = ["4.7+", "4.8+", "4.9+", "4.10+"]
 
