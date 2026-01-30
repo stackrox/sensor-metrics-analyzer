@@ -125,6 +125,7 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		Details:   []string{},
 		Timestamp: time.Now(),
 	}
+	result.ReviewStatus = "Automatically generated rule; review by the code author"
 
 	// Get histogram buckets
 	bucketMetricName := baseName + "_bucket"

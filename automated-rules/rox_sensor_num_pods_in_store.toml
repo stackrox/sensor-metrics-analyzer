@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "rox_sensor_num_pods_in_store"
 display_name = "rox_sensor_num_pods_in_store"
 description = "Number of pods tracked by Sensor"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 0

@@ -2,6 +2,9 @@ rule_type = "queue_operations"
 metric_name = "rox_sensor_detector_deployment_queue_operations_total"
 display_name = "rox_sensor_detector_deployment_queue_operations_total"
 description = "Deployment queue Add/Remove balance"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [queue_config]
 operation_label = "Operation"

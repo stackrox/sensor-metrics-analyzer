@@ -1,6 +1,9 @@
 rule_type = "percentage"
 display_name = "heap_utilization"
 description = "Heap memory utilization"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [percentage_config]
 numerator = "go_memstats_heap_alloc_bytes"

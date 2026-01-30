@@ -226,6 +226,17 @@ func (m Model) viewDetail() string {
 	}
 	detail.WriteString("\n")
 
+	// Review status
+	if result.ReviewStatus != "" {
+		detail.WriteString(detailLabelStyle.Render("Review:"))
+		detail.WriteString("\n")
+		wrappedReview := wordWrap(result.ReviewStatus, messageWidth)
+		for _, line := range strings.Split(wrappedReview, "\n") {
+			detail.WriteString(fmt.Sprintf("  %s\n", line))
+		}
+		detail.WriteString("\n")
+	}
+
 	// Value
 	if result.Value != 0 {
 		detail.WriteString(detailLabelStyle.Render("Value:      "))

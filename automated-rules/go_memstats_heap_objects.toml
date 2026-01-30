@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "go_memstats_heap_objects"
 display_name = "go_memstats_heap_objects"
 description = "Number of heap objects"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 1000000

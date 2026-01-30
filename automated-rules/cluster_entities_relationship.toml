@@ -1,6 +1,9 @@
 rule_type = "composite"
 display_name = "cluster_entities_relationship"
 description = "Validate cluster entities relationships"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [composite_config]
 

@@ -89,6 +89,11 @@ type Rule struct {
 	DisplayName string   `toml:"display_name"`
 	Description string   `toml:"description"`
 
+	// Review metadata (optional)
+	Reviewed     string `toml:"reviewed"`
+	LastReviewBy string `toml:"last_review_by"`
+	LastReviewOn string `toml:"last_review_on"`
+
 	// Type-specific configurations
 	GaugeConfig      *GaugeConfig      `toml:"gauge_config"`
 	PercentageConfig *PercentageConfig `toml:"percentage_config"`
@@ -194,6 +199,7 @@ type EvaluationResult struct {
 	Message                  string
 	Value                    float64
 	Details                  []string
+	ReviewStatus             string
 	Remediation              string // Legacy field (use PotentialActionUser/Developer)
 	PotentialActionUser      string
 	PotentialActionDeveloper string

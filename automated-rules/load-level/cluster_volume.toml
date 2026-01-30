@@ -23,6 +23,9 @@
 
 rule_type = "load_detection"
 display_name = "cluster_volume"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [[metrics]]
 name = "containers"

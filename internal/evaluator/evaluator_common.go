@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/stackrox/sensor-metrics-analyzer/internal/parser"
@@ -71,6 +72,31 @@ func getRemediation(rule rules.Rule, status rules.Status) string {
 	}
 }
 
+func applyReviewMetadata(rule rules.Rule) string {
+	review := rule.Reviewed
+	by := rule.LastReviewBy
+	on := rule.LastReviewOn
+
+	switch {
+	case review != "" && by != "" && on != "":
+		return fmt.Sprintf("%s (last review: %s on %s)", review, by, on)
+	case review != "" && by != "":
+		return fmt.Sprintf("%s (last review: %s)", review, by)
+	case review != "" && on != "":
+		return fmt.Sprintf("%s (last review: %s)", review, on)
+	case review != "":
+		return review
+	case by != "" && on != "":
+		return fmt.Sprintf("Last review: %s on %s", by, on)
+	case by != "":
+		return fmt.Sprintf("Last review: %s", by)
+	case on != "":
+		return fmt.Sprintf("Last review: %s", on)
+	}
+
+	return "review status unavailable"
+}
+
 // EvaluateAllRules evaluates all rules against metrics
 func EvaluateAllRules(rulesList []rules.Rule, metrics parser.MetricsData, loadLevel rules.LoadLevel, acsVersion string) rules.AnalysisReport {
 	report := rules.AnalysisReport{
@@ -107,6 +133,8 @@ func EvaluateAllRules(rulesList []rules.Rule, metrics parser.MetricsData, loadLe
 		if rule.Correlation != nil {
 			result = EvaluateCorrelation(rule, metrics, result)
 		}
+
+		result.ReviewStatus = applyReviewMetadata(rule)
 
 		// Add potential actions (user-facing)
 		result.Remediation = getRemediation(rule, result.Status)

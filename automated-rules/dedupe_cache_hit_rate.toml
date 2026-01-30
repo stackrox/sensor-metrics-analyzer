@@ -1,6 +1,9 @@
 rule_type = "cache_hit_rate"
 display_name = "dedupe_cache_hit_rate"
 description = "Deduplication cache effectiveness"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [cache_config]
 hits_metric = "rox_sensor_dedupe_cache_hits"

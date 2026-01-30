@@ -1,6 +1,9 @@
 rule_type = "percentage"
 display_name = "cpu_throttling"
 description = "CPU throttling percentage"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [percentage_config]
 numerator = "rox_sensor_process_cpu_nr_throttled"

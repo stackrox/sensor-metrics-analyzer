@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "rox_sensor_network_flow_buffer_size"
 display_name = "rox_sensor_network_flow_buffer_size"
 description = "Network flow buffer size monitoring"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 100

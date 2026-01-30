@@ -19,12 +19,14 @@
 {{ if gt $i 0 }}
 ---
 {{ end }}
-### {{ $r.RuleName }}
-#### Status
-RED
+### 🔴 {{ $r.RuleName }}
 
 #### Message
 {{ $r.Message }}
+{{ if $r.ReviewStatus }}
+#### Review status
+{{ $r.ReviewStatus }}
+{{ end }}
 {{ if gt (len $r.Details) 0 }}
 #### Details
 {{ range $r.Details }}
@@ -52,12 +54,14 @@ RED
 {{ if gt $i 0 }}
 ---
 {{ end }}
-### {{ $r.RuleName }}
-#### Status
-YELLOW
+### 🟡 {{ $r.RuleName }}
 
 #### Message
 {{ $r.Message }}
+{{ if $r.ReviewStatus }}
+#### Review status
+{{ $r.ReviewStatus }}
+{{ end }}
 {{ if gt (len $r.Details) 0 }}
 #### Details
 {{ range $r.Details }}
@@ -81,7 +85,11 @@ YELLOW
 
 ## 🟢 Healthy Metrics
 {{ range .GreenResults }}
+{{ if .ReviewStatus }}
+- **{{.RuleName}}:** {{.Message}} _(review: {{.ReviewStatus}})_
+{{ else }}
 - **{{.RuleName}}:** {{.Message}}
+{{ end }}
 {{ end }}
 
 {{ end }}

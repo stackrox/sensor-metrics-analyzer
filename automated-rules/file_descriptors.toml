@@ -1,6 +1,9 @@
 rule_type = "percentage"
 display_name = "file_descriptors"
 description = "File descriptor utilization"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [percentage_config]
 numerator = "process_open_fds"

@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "rox_sensor_deployment_enhancement_queue_size"
 display_name = "rox_sensor_deployment_enhancement_queue_size"
 description = "Deployment enhancement queue size"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 0
