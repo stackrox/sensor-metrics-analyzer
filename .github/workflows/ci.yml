@@ -128,6 +128,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -144,12 +147,12 @@ jobs:
 
       - name: Log in to Quay
         id: login
-        if: ${{ secrets.QUAY_USERNAME != '' && secrets.QUAY_PASSWORD != '' }}
+        if: ${{ env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != '' }}
         uses: docker/login-action@v3
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
+          username: ${{ env.QUAY_USERNAME }}
+          password: ${{ env.QUAY_PASSWORD }}
 
       - name: Build and push image
         uses: docker/build-push-action@v5
