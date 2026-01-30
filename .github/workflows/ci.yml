@@ -98,9 +98,24 @@ jobs:
 
       - name: Check version endpoint
         run: |
-          curl -fsS http://localhost:8080/version | python3 - <<'PY'
-          import json,sys
-          data = json.load(sys.stdin)
+          for i in {1..5}; do
+            if curl -fsS http://localhost:8080/version -o /tmp/version.json; then
+              if [ -s /tmp/version.json ]; then
+                break
+              fi
+            fi
+            sleep 1
+          done
+          if [ ! -s /tmp/version.json ]; then
+            echo "version response was empty"
+            cat /tmp/version.json || true
+            docker logs sma-ci || true
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          with open("/tmp/version.json") as f:
+            data = json.load(f)
           assert "version" in data
           assert "lastUpdate" in data
           print("version ok")
