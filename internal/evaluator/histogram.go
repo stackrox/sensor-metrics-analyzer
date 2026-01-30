@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,28 +48,42 @@ func EvaluateHistogram(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 		return result
 	}
 
-	// Calculate P95 and P99
+	// Calculate P50, P75, P95 and P99
+	p50Threshold := totalCount * 0.50
+	p75Threshold := totalCount * 0.75
 	p95Threshold := totalCount * 0.95
 	p99Threshold := totalCount * 0.99
 
-	var p95, p99 float64
+	var p50, p75, p95, p99 float64
 	for _, bucket := range buckets {
+		if p50 == 0 && bucket.Count >= p50Threshold {
+			p50 = bucket.Le
+		}
+		if p75 == 0 && bucket.Count >= p75Threshold {
+			p75 = bucket.Le
+		}
 		if p95 == 0 && bucket.Count >= p95Threshold {
 			p95 = bucket.Le
 		}
 		if p99 == 0 && bucket.Count >= p99Threshold {
 			p99 = bucket.Le
 		}
-		if p95 > 0 && p99 > 0 {
+		if p50 > 0 && p75 > 0 && p95 > 0 && p99 > 0 {
 			break
 		}
 	}
 
 	result.Value = p95
+	unit := ""
+	if rule.HistogramConfig != nil {
+		unit = strings.TrimSpace(rule.HistogramConfig.Unit)
+	}
 	result.Details = append(result.Details,
-		fmt.Sprintf("p95: %.3f", p95),
-		fmt.Sprintf("p99: %.3f", p99),
-		fmt.Sprintf("count: %.0f", totalCount),
+		fmt.Sprintf("p50: %s (i.e., 50%% of the observations are below this value)", formatHistogramValue(p50, unit)),
+		fmt.Sprintf("p75: %s (i.e., 75%% of the observations are below this value)", formatHistogramValue(p75, unit)),
+		fmt.Sprintf("p95: %s (i.e., 95%% of the observations are below this value)", formatHistogramValue(p95, unit)),
+		fmt.Sprintf("p99: %s (i.e., 99%% of the observations are below this value)", formatHistogramValue(p99, unit)),
+		fmt.Sprintf("count: %s", formatHumanInteger(totalCount)),
 	)
 
 	// Select thresholds based on load level
@@ -125,7 +140,7 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		Details:   []string{},
 		Timestamp: time.Now(),
 	}
-	result.ReviewStatus = "Automatically generated rule; review by the code author"
+	result.ReviewStatus = "Automatically generated rule; reviewed by the code author at the time of implementation."
 
 	// Get histogram buckets
 	bucketMetricName := baseName + "_bucket"
@@ -220,8 +235,8 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		result.Details = append(result.Details, "Metric Description: "+bucketMetric.Help)
 	}
 	result.Details = append(result.Details,
-		"Total Number of Observations: "+formatHumanNumber(worstTotalCount)+" unit",
-		"Observations in +Inf bucket: "+formatHumanNumber(worstInfObservations)+" unit",
+		"Total Number of Observations: "+formatHumanNumber(worstTotalCount),
+		"Observations in +Inf bucket: "+formatHumanNumber(worstInfObservations),
 		"Percentage of observations in +Inf bucket: "+formatHumanNumber(worstInfPercentage)+" %",
 		"Highest non-infinity bucket: "+formatHumanNumber(worstHighestFiniteLe)+" unit",
 	)
@@ -257,7 +272,15 @@ func getSeriesKey(labels map[string]string) string {
 }
 
 func formatHumanNumber(value float64) string {
-	raw := strconv.FormatFloat(value, 'f', 2, 64)
+	return formatHumanNumberWithPrecision(value, 2)
+}
+
+func formatHumanInteger(value float64) string {
+	return formatHumanNumberWithPrecision(value, 0)
+}
+
+func formatHumanNumberWithPrecision(value float64, precision int) string {
+	raw := strconv.FormatFloat(value, 'f', precision, 64)
 	sign := ""
 	if strings.HasPrefix(raw, "-") {
 		sign = "-"
@@ -280,4 +303,22 @@ func formatHumanNumber(value float64) string {
 		return sign + grouped.String() + "." + fracPart
 	}
 	return sign + grouped.String()
+}
+
+func formatHistogramValue(value float64, unit string) string {
+	formatted := formatHumanNumber(value)
+	if value == math.Trunc(value) {
+		formatted = formatHumanInteger(value)
+	}
+	unit = strings.TrimSpace(strings.ToLower(unit))
+	if unit == "" {
+		return formatted
+	}
+	switch unit {
+	case "milliseconds", "millisecond", "ms":
+		return formatted + " ms"
+	case "seconds", "second", "s":
+		return formatted + " s"
+	}
+	return formatted + " " + unit
 }

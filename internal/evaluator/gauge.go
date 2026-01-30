@@ -3,6 +3,7 @@ package evaluator
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,17 +37,21 @@ func EvaluateGauge(rule rules.Rule, metrics parser.MetricsData, loadLevel rules.
 	// Select thresholds based on load level
 	thresholds := selectThresholds(rule, loadLevel)
 
+	extras := map[string]interface{}{
+		"value_human": formatHumanNumberGauge(value),
+	}
+
 	// Evaluate thresholds
 	if thresholds.HigherIsWorse {
 		if value < thresholds.Low {
 			result.Status = rules.StatusGreen
-			result.Message = interpolate(rule.Messages.Green, value, nil)
+			result.Message = interpolate(rule.Messages.Green, value, extras)
 		} else if value < thresholds.High {
 			result.Status = rules.StatusYellow
-			result.Message = interpolate(rule.Messages.Yellow, value, nil)
+			result.Message = interpolate(rule.Messages.Yellow, value, extras)
 		} else {
 			result.Status = rules.StatusRed
-			result.Message = interpolate(rule.Messages.Red, value, nil)
+			result.Message = interpolate(rule.Messages.Red, value, extras)
 		}
 	} else {
 		// Lower is worse (inverted) - special case for zero checks
@@ -54,22 +59,22 @@ func EvaluateGauge(rule rules.Rule, metrics parser.MetricsData, loadLevel rules.
 			// Zero check: > 0 is good, == 0 is bad
 			if value > 0 {
 				result.Status = rules.StatusGreen
-				result.Message = interpolate(rule.Messages.Green, value, nil)
+				result.Message = interpolate(rule.Messages.Green, value, extras)
 			} else {
 				result.Status = rules.StatusRed
-				result.Message = interpolate(rule.Messages.Red, value, nil)
+				result.Message = interpolate(rule.Messages.Red, value, extras)
 			}
 		} else {
 			// Normal inverted logic
 			if value >= thresholds.High {
 				result.Status = rules.StatusGreen
-				result.Message = interpolate(rule.Messages.Green, value, nil)
+				result.Message = interpolate(rule.Messages.Green, value, extras)
 			} else if value >= thresholds.Low {
 				result.Status = rules.StatusYellow
-				result.Message = interpolate(rule.Messages.Yellow, value, nil)
+				result.Message = interpolate(rule.Messages.Yellow, value, extras)
 			} else {
 				result.Status = rules.StatusRed
-				result.Message = interpolate(rule.Messages.Red, value, nil)
+				result.Message = interpolate(rule.Messages.Red, value, extras)
 			}
 		}
 	}
@@ -113,4 +118,21 @@ func interpolate(template string, value float64, extras map[string]interface{}) 
 	}
 
 	return result
+}
+
+func formatHumanNumberGauge(value float64) string {
+	raw := strconv.FormatFloat(value, 'f', 0, 64)
+	sign := ""
+	if strings.HasPrefix(raw, "-") {
+		sign = "-"
+		raw = strings.TrimPrefix(raw, "-")
+	}
+	var grouped strings.Builder
+	for i, r := range raw {
+		if i > 0 && (len(raw)-i)%3 == 0 {
+			grouped.WriteString(" ")
+		}
+		grouped.WriteRune(r)
+	}
+	return sign + grouped.String()
 }
