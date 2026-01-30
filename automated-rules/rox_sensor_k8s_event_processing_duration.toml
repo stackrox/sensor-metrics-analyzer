@@ -1,17 +1,23 @@
 rule_type = "histogram"
 metric_name = "rox_sensor_k8s_event_processing_duration"
 display_name = "rox_sensor_k8s_event_processing_duration"
-description = "K8s event processing duration"
-reviewed = "No, AI-generated"
-last_review_by = ""
-last_review_on = "never"
+description = """
+K8s event processing duration in milliseconds.
+It measures how long the listener’s dispatcher takes to process a single Kubernetes event, 
+from right before ProcessEvent starts until right after it finishes and the metric is recorded. 
+It does not include resolver, detector, or sending to Central.
+"""
+
+reviewed = "Partially, by a human"
+last_review_by = "Piotr"
+last_review_on = "30-01-2026"
 
 [histogram_config]
-unit = "seconds"
+unit = "ms"
 
 [thresholds]
-p95_good = 0.1
-p95_warn = 1.0
+p95_good = 256
+p95_warn = 512
 
 [messages]
 green = "p95={p95:.3f}s, p99={p99:.3f}s (good)"

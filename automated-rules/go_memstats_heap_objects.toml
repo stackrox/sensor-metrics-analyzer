@@ -12,9 +12,9 @@ high = 10000000
 higher_is_worse = true
 
 [messages]
-green = "{value:.0f} heap objects (healthy)"
-yellow = "{value:.0f} heap objects (elevated - monitor memory)"
-red = "{value:.0f} heap objects (very high - significant memory use)"
+green = "{value_human} heap objects (healthy)"
+yellow = "{value_human} heap objects (elevated - monitor memory)"
+red = "{value_human} heap objects (very high - significant memory use)"
 
 [remediation]
 red = "Very high heap object count. Check for memory leaks. Review object allocation patterns."
