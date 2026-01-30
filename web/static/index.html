@@ -328,30 +328,38 @@
         const releasesUrl = 'https://github.com/stackrox/sensor-metrics-analyzer/releases';
         releaseLink.href = releasesUrl;
 
-        fetch('/version')
-            .then(response => response.ok ? response.json() : null)
-            .then(data => {
-                if (!data) {
-                    throw new Error('Failed to fetch version info');
-                }
-                if (data.version) {
-                    versionValue.textContent = data.version;
-                }
-                if (data.lastUpdate) {
-                    const date = new Date(data.lastUpdate);
-                    lastUpdateValue.textContent = Number.isNaN(date.getTime())
-                        ? data.lastUpdate
-                        : new Intl.DateTimeFormat(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                        }).format(date);
-                }
-            })
-            .catch(() => {
-                versionValue.textContent = 'Unavailable';
-                lastUpdateValue.textContent = 'Unavailable';
-            });
+        const fetchVersionInfo = (attempt = 1) => {
+            fetch('/version', { cache: 'no-store' })
+                .then(response => response.ok ? response.json() : null)
+                .then(data => {
+                    if (!data) {
+                        throw new Error('Failed to fetch version info');
+                    }
+                    if (data.version) {
+                        versionValue.textContent = data.version;
+                    }
+                    if (data.lastUpdate) {
+                        const date = new Date(data.lastUpdate);
+                        lastUpdateValue.textContent = Number.isNaN(date.getTime())
+                            ? data.lastUpdate
+                            : new Intl.DateTimeFormat(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            }).format(date);
+                    }
+                })
+                .catch(() => {
+                    if (attempt < 3) {
+                        setTimeout(() => fetchVersionInfo(attempt + 1), 1000 * attempt);
+                        return;
+                    }
+                    versionValue.textContent = 'Unavailable';
+                    lastUpdateValue.textContent = 'Unavailable';
+                });
+        };
+
+        fetchVersionInfo();
 
         // File input change
         fileInput.addEventListener('change', (e) => {

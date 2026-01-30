@@ -1,0 +1,14 @@
+.git
+.github
+.cursor
+.vscode
+bin
+dist
+demo
+testdata
+*.md
+*.log
+*.tmp
+*.out
+coverage.out
+deploy/nginx.conf

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -39,16 +40,20 @@ var (
 	simpleMetricRegex = regexp.MustCompile(`^([a-zA-Z_][a-zA-Z0-9_:]*)\s+(.+)$`)
 )
 
-// ParseFile parses a Prometheus metrics file
+// ParseFile parses a Prometheus metrics file.
 func ParseFile(filepath string) (MetricsData, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
+	return ParseReader(file)
+}
 
+// ParseReader parses Prometheus metrics from a reader.
+func ParseReader(reader io.Reader) (MetricsData, error) {
 	metrics := make(MetricsData)
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -246,6 +251,7 @@ func (md MetricsData) GetHistogramCount(baseName string) (float64, bool) {
 func (md MetricsData) DetectACSVersion() (string, bool) {
 	// Try common version metrics
 	versionMetrics := []string{
+		"rox_sensor_info",
 		"rox_sensor_version_info",
 		"rox_central_version_info",
 		"rox_version",
@@ -261,6 +267,9 @@ func (md MetricsData) DetectACSVersion() (string, bool) {
 					return version, true
 				}
 				if version, ok := v.Labels["rox_version"]; ok && version != "" {
+					return version, true
+				}
+				if version, ok := v.Labels["sensor_version"]; ok && version != "" {
 					return version, true
 				}
 			}
