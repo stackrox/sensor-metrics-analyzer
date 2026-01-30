@@ -1,7 +1,10 @@
 rule_type = "histogram"
 metric_name = "rox_sensor_enricher_image_scan_internal_exponential_backoff_seconds"
 display_name = "rox_sensor_enricher_image_scan_internal_exponential_backoff_seconds"
-description = "Image scan exponential backoff duration"
+description = "Image scan exponential backoff duration. High value means the scanner is overloaded and image scans are being delayed."
+reviewed = "Yes, human-reviewed"
+last_review_by = "Piotr"
+last_review_on = "2026-01-30"
 
 [histogram_config]
 unit = "seconds"
@@ -12,12 +15,21 @@ p95_warn = 4.0
 
 [messages]
 green = "p95={p95:.3f}s, p99={p99:.3f}s (good)"
-yellow = "p95={p95:.3f}s, p99={p99:.3f}s (elevated)"
-red = "p95={p95:.3f}s, p99={p99:.3f}s (high backoff - scanner issues)"
+yellow = """
+p95={p95:.3f}s, p99={p99:.3f}s (elevated)
+High value = the system is spending a lot of time waiting before it can scan images, not actually doing work. 
+That waiting happens only when the scanner is too busy or rate‑limited, so a high number means requests are piling up and scans are delayed. 
+This delay applies to each scan request being sent to scanner.
+"""
+red = """
+p95={p95:.3f}s, p99={p99:.3f}s (high backoff - scanner issues).
+High value = the system is spending a lot of time waiting before it can scan images, not actually doing work. 
+That waiting happens only when the scanner is too busy or rate‑limited, so a high number means requests are piling up and scans are delayed. 
+This delay applies to each scan request being sent to scanner.
+"""
 
 [remediation]
-red = "High image scan backoff duration. Check scanner connectivity and performance."
-yellow = "Monitor image scan backoff trends."
+red = "High image scan backoff duration. Check scanner connectivity and performance. Also check the `rox_sensor_scan_call_duration_milliseconds` metric."
+yellow = "Monitor image scan backoff trends. Also check the `rox_sensor_scan_call_duration_milliseconds` metric."
 
-acs_versions = ["4.7+", "4.8+", "4.9+"]
-
+acs_versions = ["4.7+", "4.8+", "4.9+", "4.10+"]

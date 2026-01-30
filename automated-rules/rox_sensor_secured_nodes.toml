@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "rox_sensor_secured_nodes"
 display_name = "rox_sensor_secured_nodes"
 description = "Number of secured nodes"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 0

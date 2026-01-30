@@ -210,10 +210,6 @@ func listRulesCommand() {
 	}
 }
 
-func extractClusterName(filename string) string {
-	return analyzer.ExtractClusterName(filename)
-}
-
 func printUsage() {
 	fmt.Println("Usage: metrics-analyzer <command> [options]")
 	fmt.Println()

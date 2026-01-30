@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "http_incoming_in_flight_requests"
 display_name = "http_incoming_in_flight_requests"
 description = "HTTP in-flight requests"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 10

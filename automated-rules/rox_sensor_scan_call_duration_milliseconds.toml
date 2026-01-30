@@ -1,7 +1,10 @@
 rule_type = "histogram"
 metric_name = "rox_sensor_scan_call_duration_milliseconds"
 display_name = "rox_sensor_scan_call_duration_milliseconds"
-description = "Scan call duration"
+description = "Time it takes the secured-cluster scanner to process a request"
+reviewed = "Yes, human-reviewed"
+last_review_by = "Piotr"
+last_review_on = "2026-01-30"
 
 [histogram_config]
 unit = "milliseconds"
@@ -12,12 +15,20 @@ p95_warn = 2000
 
 [messages]
 green = "p95={p95:.0f}ms, p99={p99:.0f}ms (good)"
-yellow = "p95={p95:.0f}ms, p99={p99:.0f}ms (elevated)"
-red = "p95={p95:.0f}ms, p99={p99:.0f}ms (high latency)"
+yellow = """
+Elevated latency when calling scanner.
+Secured-cluster scanner (delegated scanning) is responding slowly and slowing down sensor pipelines.
+If the trend continues it may lead to Sensor consuming significant memory and degraded performance. 
+"""
+red = """
+High latency when calling scanner.
+Secured-cluster scanner (delegated scanning) is responding slowly and slowing down sensor pipelines.
+Check metric `rox_sensor_k8s_event_ingestion_to_send_duration` if it's status is red, then sensor is most probably already being chocked and may start consume significant amounts of memory.
+"""
 
 [remediation]
 red = "High scan call latency. Check scanner performance and connectivity."
 yellow = "Monitor scan call latency trends."
 
-acs_versions = ["4.7+", "4.8+", "4.9+"]
+acs_versions = ["4.7+", "4.8+", "4.9+", "4.10+"]
 

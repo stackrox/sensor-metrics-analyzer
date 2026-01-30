@@ -2,6 +2,9 @@ rule_type = "gauge_threshold"
 metric_name = "go_memstats_heap_objects"
 display_name = "go_memstats_heap_objects"
 description = "Number of heap objects"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [thresholds]
 low = 1000000
@@ -9,9 +12,9 @@ high = 10000000
 higher_is_worse = true
 
 [messages]
-green = "{value:.0f} heap objects (healthy)"
-yellow = "{value:.0f} heap objects (elevated - monitor memory)"
-red = "{value:.0f} heap objects (very high - significant memory use)"
+green = "{value_human} heap objects (healthy)"
+yellow = "{value_human} heap objects (elevated - monitor memory)"
+red = "{value_human} heap objects (very high - significant memory use)"
 
 [remediation]
 red = "Very high heap object count. Check for memory leaks. Review object allocation patterns."

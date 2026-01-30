@@ -1,6 +1,12 @@
 rule_type = "composite"
 display_name = "cluster_entities_relationship"
-description = "Validate cluster entities relationships"
+description = """
+Validate cluster entities relation of number of containers, their endpoints (ports), and IP addresses.
+"""
+
+reviewed = "Partially, by a human"
+last_review_by = "Piotr"
+last_review_on = "30-01-2026"
 
 [composite_config]
 
@@ -28,7 +34,11 @@ numerator = "endpoints"
 denominator = "containers"
 min_ratio = 0.5
 status = "yellow"
-message = "Entities: {containers} containers, {endpoints} endpoints, {ips} IPs - Low endpoint ratio"
+message = """
+Entities: {containers} containers, {endpoints} endpoints, {ips} IPs - Low endpoint to container ratio.
+This roughly means that more than half of the containers have 0 endpoints (ports). 
+This is unusual, however possible.
+"""
 
 [[composite_config.checks]]
 check_type = "ratio"
@@ -36,7 +46,10 @@ numerator = "ips"
 denominator = "endpoints"
 min_ratio = 0.5
 status = "yellow"
-message = "Entities: {containers} containers, {endpoints} endpoints, {ips} IPs - Low IP ratio"
+message = """
+Entities: {containers} containers, {endpoints} endpoints, {ips} IPs - Low IP to endpoints ratio.
+We expect that there should be more unique IP addresses assigned to this number of containers and endpoints.
+"""
 
 [messages]
 green = "Entities: {containers} containers, {endpoints} endpoints, {ips} IPs (healthy ratios)"

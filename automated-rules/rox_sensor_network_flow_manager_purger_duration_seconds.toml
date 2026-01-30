@@ -2,6 +2,9 @@ rule_type = "histogram"
 metric_name = "rox_sensor_network_flow_manager_purger_duration_seconds"
 display_name = "rox_sensor_network_flow_manager_purger_duration_seconds"
 description = "Network flow manager purger duration"
+reviewed = "No, AI-generated"
+last_review_by = ""
+last_review_on = "never"
 
 [histogram_config]
 unit = "seconds"
