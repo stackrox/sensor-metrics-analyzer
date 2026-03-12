@@ -77,66 +77,13 @@ make build
 ./bin/metrics-analyzer list-rules
 ```
 
-## TUI Keyboard Shortcuts
+## More Documentation
 
-| Key | Action |
-|-----|--------|
-| `↑`/`k`, `↓`/`j` | Navigate up/down |
-| `Enter`/`→` | View details |
-| `←`/`Esc` | Go back |
-| `g`/`Home` | Go to top |
-| `G`/`End` | Go to bottom |
-| `PgUp`/`PgDn` | Page up/down |
-| `/` | Search/filter |
-| `1-4` | Filter by status (All/Red/Yellow/Green) |
-| `?` | Toggle help |
-| `q` | Quit |
-
-## Project Structure
-
-```
-sensor-metrics-analyzer-go/
-├── cmd/metrics-analyzer/    # CLI entry point
-├── internal/
-│   ├── parser/              # Prometheus metrics parser
-│   ├── rules/               # TOML rule loader and validator
-│   ├── loadlevel/           # Load level detection engine
-│   ├── evaluator/           # Rule evaluation logic
-│   ├── reporter/            # Report generation (markdown/console)
-│   └── tui/                 # Interactive terminal UI (Bubble Tea)
-├── automated-rules/         # TOML rule definitions
-└── templates/               # Report templates
-```
-
-## Testing
-
-```bash
-# Unit tests
-make test
-
-# Integration test (compare with Python output)
-python3 analyze_metrics_full.py metrics.txt > /tmp/python-output.txt
-./bin/metrics-analyzer analyze --format markdown --output /tmp/go-report.md metrics.txt
-go run testdata/compare_outputs.go /tmp/python-output.txt /tmp/go-report.md
-```
-
-## Recording Demos
-
-This project uses [VHS](https://github.com/charmbracelet/vhs) for recording terminal demos.
-See the [`demo/`](demo/) folder for scripts and instructions.
-
-```bash
-# Install VHS
-brew install vhs
-
-# Record demos
-cd demo
-vhs demo.tape       # Full TUI demo
-vhs demo-cli.tape   # CLI mode demo
-
-# Publish to charm servers
-vhs publish demo.gif
-```
+- [TUI Keyboard Shortcuts](docs/usage/tui-shortcuts.md)
+- [Project Structure](docs/architecture/project-structure.md)
+- [Testing](docs/dev/testing.md)
+- [Recording Demos](docs/dev/recording-demos.md)
+- [Releasing a New Version](docs/dev/releasing.md)
 
 ## Dependencies
 
@@ -145,6 +92,11 @@ Built with:
 - [Lip Gloss](https://github.com/charmbracelet/lipgloss) - Style definitions
 - [Bubbles](https://github.com/charmbracelet/bubbles) - TUI components
 - [go-pretty](https://github.com/jedib0t/go-pretty) - Table formatting
+
+## Additional Docs
+
+- [Documentation Home](docs/README.md)
+- [Rules Wiki](docs/rules/README.md)
 
 ## License
 
