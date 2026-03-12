@@ -1,0 +1,31 @@
+site_name: Sensor Metrics Analyzer Docs
+site_description: Documentation for sensor-metrics-analyzer
+repo_url: https://github.com/stackrox/sensor-metrics-analyzer
+repo_name: stackrox/sensor-metrics-analyzer
+
+theme:
+  name: material
+
+docs_dir: docs
+
+nav:
+  - Docs Home: README.md
+  - Rules:
+      - Rules Home: rules/README.md
+      - Rule Types and Examples: rules/rule-types.md
+      - Advanced Rule Features: rules/advanced-features.md
+      - Load Detection Rules: rules/load-detection.md
+  - Usage:
+      - TUI Keyboard Shortcuts: usage/tui-shortcuts.md
+  - Developer Guides:
+      - Testing: dev/testing.md
+      - Releasing a New Version: dev/releasing.md
+      - Recording Demos: dev/recording-demos.md
+  - Architecture:
+      - Project Structure: architecture/project-structure.md
+
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true
