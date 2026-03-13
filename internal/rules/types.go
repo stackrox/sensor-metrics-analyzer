@@ -196,6 +196,7 @@ type LoadDetectionThreshold struct {
 type EvaluationResult struct {
 	RuleName                 string
 	Status                   Status
+	MetricHelp               string
 	Message                  string
 	Value                    float64
 	Details                  []string

@@ -210,9 +210,6 @@ func (m Model) viewDetail() string {
 	}
 	detail.WriteString("\n\n")
 
-	// Message (wrapped to screen width)
-	detail.WriteString(detailLabelStyle.Render("Message:"))
-	detail.WriteString("\n")
 	messageWidth := 70
 	if m.width > 0 {
 		messageWidth = m.width - 10
@@ -220,6 +217,21 @@ func (m Model) viewDetail() string {
 			messageWidth = 40
 		}
 	}
+
+	// Metric description
+	if result.MetricHelp != "" {
+		detail.WriteString(detailLabelStyle.Render("Metric description:"))
+		detail.WriteString("\n")
+		wrappedDescription := wordWrap(result.MetricHelp, messageWidth)
+		for _, line := range strings.Split(wrappedDescription, "\n") {
+			detail.WriteString(fmt.Sprintf("  %s\n", line))
+		}
+		detail.WriteString("\n")
+	}
+
+	// Message (wrapped to screen width)
+	detail.WriteString(detailLabelStyle.Render("Message:"))
+	detail.WriteString("\n")
 	wrappedMessage := wordWrap(result.Message, messageWidth)
 	for _, line := range strings.Split(wrappedMessage, "\n") {
 		detail.WriteString(fmt.Sprintf("  %s\n", line))

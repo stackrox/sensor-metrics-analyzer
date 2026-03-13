@@ -12,6 +12,11 @@ import (
 	"github.com/stackrox/sensor-metrics-analyzer/internal/rules"
 )
 
+const (
+	infOverflowYellowThresholdPercent = 25.0
+	infOverflowRedThresholdPercent    = 50.0
+)
+
 // EvaluateHistogram evaluates a histogram rule
 func EvaluateHistogram(rule rules.Rule, metrics parser.MetricsData, loadLevel rules.LoadLevel) rules.EvaluationResult {
 	result := rules.EvaluationResult{
@@ -122,53 +127,52 @@ func EvaluateHistogramInfOverflow(metrics parser.MetricsData, loadLevel rules.Lo
 	histogramBases := metrics.GetHistogramBaseNames()
 
 	for _, baseName := range histogramBases {
-		result := evaluateSingleHistogramInfOverflow(baseName, metrics)
-		if result != nil {
-			results = append(results, *result)
-		}
+		results = append(results, evaluateSingleHistogramInfOverflow(baseName, metrics)...)
 	}
 
 	return results
 }
 
 // evaluateSingleHistogramInfOverflow evaluates a single histogram metric for +Inf overflow
-// Handles multiple label combinations (series) by evaluating each separately and reporting the worst case
-func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsData) *rules.EvaluationResult {
-	result := &rules.EvaluationResult{
-		RuleName:  baseName + " (+Inf overflow check)",
-		Status:    rules.StatusGreen,
-		Details:   []string{},
-		Timestamp: time.Now(),
-	}
-	result.ReviewStatus = "Automatically generated rule; reviewed by the code author at the time of implementation."
-
+// Handles multiple label combinations (series) by emitting one result per problematic series.
+func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsData) []rules.EvaluationResult {
 	// Get histogram buckets
 	bucketMetricName := baseName + "_bucket"
 	bucketMetric, exists := metrics.GetMetric(bucketMetricName)
 	if !exists || len(bucketMetric.Values) == 0 {
-		return nil // Skip if no buckets found
+		return nil
 	}
+	metricHelp := resolveMetricHelp(baseName, metrics)
 
 	// Group buckets by label combination (excluding "le" label)
 	// Each label combination represents a separate time series
 	seriesBuckets := make(map[string][]parser.MetricValue)
+	seriesLabels := make(map[string]map[string]string)
 	for _, v := range bucketMetric.Values {
 		// Create a key from all labels except "le"
 		seriesKey := getSeriesKey(v.Labels)
 		seriesBuckets[seriesKey] = append(seriesBuckets[seriesKey], v)
+		if _, seen := seriesLabels[seriesKey]; !seen {
+			seriesLabels[seriesKey] = extractSeriesLabels(v.Labels)
+		}
 	}
 
-	// Track worst case across all series
-	var worstInfPercentage float64
-	var worstInfObservations float64
-	var worstTotalCount float64
-	var worstHighestFiniteLe float64
-	var worstStatus rules.Status
+	type seriesEvaluation struct {
+		labels          map[string]string
+		infPercentage   float64
+		infObservations float64
+		totalCount      float64
+		highestFiniteLe float64
+		status          rules.Status
+	}
+	var evaluations []seriesEvaluation
 
 	hasAnyData := false
+	hasProblematic := false
+	var worstOverall *seriesEvaluation
 
 	// Evaluate each series separately
-	for _, buckets := range seriesBuckets {
+	for seriesKey, buckets := range seriesBuckets {
 		// Find +Inf bucket and highest finite bucket for this series
 		var infCount float64
 		var highestFiniteLe float64
@@ -206,57 +210,93 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		}
 		infPercentage := (infObservations / infCount) * 100.0
 
-		// Track worst case
-		if infPercentage > worstInfPercentage {
-			worstInfPercentage = infPercentage
-			worstInfObservations = infObservations
-			worstTotalCount = infCount
-			worstHighestFiniteLe = highestFiniteLe
+		status := rules.StatusGreen
+		if infPercentage > infOverflowRedThresholdPercent {
+			status = rules.StatusRed
+		} else if infPercentage > infOverflowYellowThresholdPercent {
+			status = rules.StatusYellow
+		}
 
-			// Determine status for this series
-			if infPercentage > 50.0 {
-				worstStatus = rules.StatusRed
-			} else if infPercentage > 25.0 {
-				worstStatus = rules.StatusYellow
-			} else {
-				worstStatus = rules.StatusGreen
-			}
+		eval := seriesEvaluation{
+			labels:          seriesLabels[seriesKey],
+			infPercentage:   infPercentage,
+			infObservations: infObservations,
+			totalCount:      infCount,
+			highestFiniteLe: highestFiniteLe,
+			status:          status,
+		}
+		evaluations = append(evaluations, eval)
+
+		if worstOverall == nil || infPercentage > worstOverall.infPercentage {
+			worstCopy := eval
+			worstOverall = &worstCopy
 		}
 	}
 
-	if !hasAnyData {
+	if !hasAnyData || len(evaluations) == 0 {
 		return nil
 	}
 
-	result.Status = worstStatus
-	if baseMetric, ok := metrics.GetMetric(baseName); ok && baseMetric.Help != "" {
-		result.Details = append(result.Details, "Metric Description: "+baseMetric.Help)
-	} else if bucketMetric, ok := metrics.GetMetric(baseName + "_bucket"); ok && bucketMetric.Help != "" {
-		result.Details = append(result.Details, "Metric Description: "+bucketMetric.Help)
-	}
-	result.Details = append(result.Details,
-		"Total Number of Observations: "+formatHumanNumber(worstTotalCount),
-		"Observations in +Inf bucket: "+formatHumanNumber(worstInfObservations),
-		"Percentage of observations in +Inf bucket: "+formatHumanNumber(worstInfPercentage)+" %",
-		"Highest non-infinity bucket: "+formatHumanNumber(worstHighestFiniteLe)+" unit",
-	)
-
-	// Build message based on worst case
-	result.Message = fmt.Sprintf("%s%% of observations in +Inf bucket (acceptable). Highest non-infinity bucket: %s",
-		formatHumanNumber(worstInfPercentage), formatHumanNumber(worstHighestFiniteLe))
-	if worstInfPercentage > 25.0 {
+	var results []rules.EvaluationResult
+	for _, eval := range evaluations {
+		if eval.status == rules.StatusGreen {
+			continue
+		}
+		hasProblematic = true
+		result := rules.EvaluationResult{
+			RuleName:     formatSeriesRuleName(baseName, eval.labels),
+			Status:       eval.status,
+			MetricHelp:   metricHelp,
+			Details:      []string{},
+			Timestamp:    time.Now(),
+			ReviewStatus: "Automatically generated rule; reviewed by the code author at the time of implementation.",
+			PotentialActionUser: fmt.Sprintf("Further investigation is required to understand why values exceed %s. "+
+				"Check if there are other alerts for this specific metric with more precise context.", formatHumanNumber(eval.highestFiniteLe)),
+			PotentialActionDeveloper: "Review code paths and metric instrumentation to confirm whether observed latencies are expected.",
+		}
+		result.Details = append(result.Details,
+			"Total Number of Observations: "+formatHumanNumber(eval.totalCount),
+			"Observations in +Inf bucket: "+formatHumanNumber(eval.infObservations),
+			"Percentage of observations in +Inf bucket: "+formatHumanNumber(eval.infPercentage)+" %",
+			"Highest non-infinity bucket: "+formatHumanNumber(eval.highestFiniteLe)+" unit",
+		)
 		result.Message = fmt.Sprintf("%s%% of observations are in +Inf bucket (%s out of %s). "+
 			"This indicates the metric designer likely didn't expect processing durations to be so high. "+
 			"Highest non-infinity bucket: %s",
-			formatHumanNumber(worstInfPercentage),
-			formatHumanNumber(worstInfObservations),
-			formatHumanNumber(worstTotalCount),
-			formatHumanNumber(worstHighestFiniteLe))
-		result.PotentialActionUser = fmt.Sprintf("Further investigation is required to understand why values exceed %s. "+
-			"Check if there are other alerts for this specific metric with more precise context.", formatHumanNumber(worstHighestFiniteLe))
-		result.PotentialActionDeveloper = "Review code paths and metric instrumentation to confirm whether observed latencies are expected."
+			formatHumanNumber(eval.infPercentage),
+			formatHumanNumber(eval.infObservations),
+			formatHumanNumber(eval.totalCount),
+			formatHumanNumber(eval.highestFiniteLe))
+		results = append(results, result)
 	}
-	return result
+
+	if hasProblematic {
+		sort.Slice(results, func(i, j int) bool {
+			if results[i].Status != results[j].Status {
+				return results[i].Status == rules.StatusRed
+			}
+			return results[i].RuleName < results[j].RuleName
+		})
+		return results
+	}
+
+	greenResult := rules.EvaluationResult{
+		RuleName:     baseName + " (+Inf overflow check)",
+		Status:       rules.StatusGreen,
+		MetricHelp:   metricHelp,
+		Details:      []string{},
+		Timestamp:    time.Now(),
+		ReviewStatus: "Automatically generated rule; reviewed by the code author at the time of implementation.",
+	}
+	greenResult.Details = append(greenResult.Details,
+		"Total Number of Observations: "+formatHumanNumber(worstOverall.totalCount),
+		"Observations in +Inf bucket: "+formatHumanNumber(worstOverall.infObservations),
+		"Percentage of observations in +Inf bucket: "+formatHumanNumber(worstOverall.infPercentage)+" %",
+		"Highest non-infinity bucket: "+formatHumanNumber(worstOverall.highestFiniteLe)+" unit",
+	)
+	greenResult.Message = fmt.Sprintf("%s%% of observations in +Inf bucket (acceptable). Highest non-infinity bucket: %s",
+		formatHumanNumber(worstOverall.infPercentage), formatHumanNumber(worstOverall.highestFiniteLe))
+	return []rules.EvaluationResult{greenResult}
 }
 
 // getSeriesKey creates a key from labels excluding "le" to group buckets by series
@@ -269,6 +309,43 @@ func getSeriesKey(labels map[string]string) string {
 	}
 	sort.Strings(keys)
 	return strings.Join(keys, ",")
+}
+
+func extractSeriesLabels(labels map[string]string) map[string]string {
+	result := make(map[string]string)
+	for key, value := range labels {
+		if key == "le" {
+			continue
+		}
+		result[key] = value
+	}
+	return result
+}
+
+func formatSeriesRuleName(baseName string, labels map[string]string) string {
+	if len(labels) == 0 {
+		return baseName + " (+Inf overflow check)"
+	}
+	var keys []string
+	for key := range labels {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	var parts []string
+	for _, key := range keys {
+		parts = append(parts, key+"="+labels[key])
+	}
+	return baseName + "{" + strings.Join(parts, ", ") + "} (+Inf overflow check)"
+}
+
+func resolveMetricHelp(baseName string, metrics parser.MetricsData) string {
+	if baseMetric, ok := metrics.GetMetric(baseName); ok && baseMetric.Help != "" {
+		return baseMetric.Help
+	}
+	if bucketMetric, ok := metrics.GetMetric(baseName + "_bucket"); ok && bucketMetric.Help != "" {
+		return bucketMetric.Help
+	}
+	return ""
 }
 
 func formatHumanNumber(value float64) string {
