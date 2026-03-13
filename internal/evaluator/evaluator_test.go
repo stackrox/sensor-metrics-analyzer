@@ -554,4 +554,80 @@ func TestEvaluateHistogramInfOverflow(t *testing.T) {
 			t.Fatalf("expected 0 results, got %d", len(results))
 		}
 	})
+
+	t.Run("guesses unit from metric name for +Inf output", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_duration_seconds_bucket": &parser.Metric{
+				Name: "test_duration_seconds_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "512"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if !strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 s") {
+			t.Fatalf("expected guessed seconds unit in message, got: %s", results[0].Message)
+		}
+		details := strings.Join(results[0].Details, "\n")
+		if !strings.Contains(details, "Highest non-infinity bucket: 512 s") {
+			t.Fatalf("expected guessed seconds unit in details, got: %s", details)
+		}
+	})
+
+	t.Run("uses help text only when unit is unambiguous", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"mystery_metric": &parser.Metric{
+				Name: "mystery_metric",
+				Help: "Time taken in milliseconds for processing",
+				Type: "histogram",
+			},
+			"mystery_metric_bucket": &parser.Metric{
+				Name: "mystery_metric_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "512"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if !strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 ms") {
+			t.Fatalf("expected guessed milliseconds unit in message, got: %s", results[0].Message)
+		}
+	})
+
+	t.Run("does not use help text when multiple units are present", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"mystery_metric": &parser.Metric{
+				Name: "mystery_metric",
+				Help: "Latency shown in milliseconds and seconds for compatibility",
+				Type: "histogram",
+			},
+			"mystery_metric_bucket": &parser.Metric{
+				Name: "mystery_metric_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "512"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 ms") ||
+			strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 s") {
+			t.Fatalf("expected no guessed unit in ambiguous help text, got: %s", results[0].Message)
+		}
+	})
 }

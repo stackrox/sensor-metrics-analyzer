@@ -143,6 +143,7 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		return nil
 	}
 	metricHelp := resolveMetricHelp(baseName, metrics)
+	guessedUnit := guessMetricUnit(baseName, metricHelp)
 
 	// Group buckets by label combination (excluding "le" label)
 	// Each label combination represents a separate time series
@@ -252,14 +253,14 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 			Timestamp:    time.Now(),
 			ReviewStatus: "Automatically generated rule; reviewed by the code author at the time of implementation.",
 			PotentialActionUser: fmt.Sprintf("Further investigation is required to understand why values exceed %s. "+
-				"Check if there are other alerts for this specific metric with more precise context.", formatHumanNumber(eval.highestFiniteLe)),
+				"Check if there are other alerts for this specific metric with more precise context.", formatHistogramValue(eval.highestFiniteLe, guessedUnit)),
 			PotentialActionDeveloper: "Review code paths and metric instrumentation to confirm whether observed latencies are expected.",
 		}
 		result.Details = append(result.Details,
 			"Total Number of Observations: "+formatHumanNumber(eval.totalCount),
 			"Observations in +Inf bucket: "+formatHumanNumber(eval.infObservations),
 			"Percentage of observations in +Inf bucket: "+formatHumanNumber(eval.infPercentage)+" %",
-			"Highest non-infinity bucket: "+formatHumanNumber(eval.highestFiniteLe)+" unit",
+			"Highest non-infinity bucket: "+formatHistogramValue(eval.highestFiniteLe, guessedUnit),
 		)
 		result.Message = fmt.Sprintf("%s%% of observations are in +Inf bucket (%s out of %s). "+
 			"This indicates the metric designer likely didn't expect the values to be so high. "+
@@ -268,7 +269,7 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 			formatHumanNumber(eval.infPercentage),
 			formatHumanNumber(eval.infObservations),
 			formatHumanNumber(eval.totalCount),
-			formatHumanNumber(eval.highestFiniteLe))
+			formatHistogramValue(eval.highestFiniteLe, guessedUnit))
 		results = append(results, result)
 	}
 
@@ -294,10 +295,10 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		"Total Number of Observations: "+formatHumanNumber(worstOverall.totalCount),
 		"Observations in +Inf bucket: "+formatHumanNumber(worstOverall.infObservations),
 		"Percentage of observations in +Inf bucket: "+formatHumanNumber(worstOverall.infPercentage)+" %",
-		"Highest non-infinity bucket: "+formatHumanNumber(worstOverall.highestFiniteLe)+" unit",
+		"Highest non-infinity bucket: "+formatHistogramValue(worstOverall.highestFiniteLe, guessedUnit),
 	)
 	greenResult.Message = fmt.Sprintf("%s%% of observations in +Inf bucket (acceptable). Highest non-infinity bucket: %s",
-		formatHumanNumber(worstOverall.infPercentage), formatHumanNumber(worstOverall.highestFiniteLe))
+		formatHumanNumber(worstOverall.infPercentage), formatHistogramValue(worstOverall.highestFiniteLe, guessedUnit))
 	return []rules.EvaluationResult{greenResult}
 }
 
