@@ -5,6 +5,11 @@ image:
   tag: "0.0.5"
   pullPolicy: IfNotPresent
 
+# Optional image pull secrets for private registries.
+# The referenced Secret(s) must already exist in the release namespace.
+imagePullSecrets:
+  - name: quay-secret
+
 service:
   type: ClusterIP
   port: 80
