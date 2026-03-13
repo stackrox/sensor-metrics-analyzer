@@ -155,7 +155,7 @@ func EvaluateAllRules(rulesList []rules.Rule, metrics parser.MetricsData, loadLe
 	}
 
 	// Apply general histogram +Inf overflow rule to all histogram metrics
-	infOverflowResults := EvaluateHistogramInfOverflow(metrics, loadLevel)
+	infOverflowResults := EvaluateHistogramInfOverflow(metrics)
 	for _, result := range infOverflowResults {
 		report.Results = append(report.Results, result)
 

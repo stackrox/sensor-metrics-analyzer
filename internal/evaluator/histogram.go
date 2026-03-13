@@ -120,7 +120,7 @@ func EvaluateHistogram(rule rules.Rule, metrics parser.MetricsData, loadLevel ru
 
 // EvaluateHistogramInfOverflow evaluates all histogram metrics for +Inf bucket overflow
 // This is a general rule that applies to any histogram metric
-func EvaluateHistogramInfOverflow(metrics parser.MetricsData, loadLevel rules.LoadLevel) []rules.EvaluationResult {
+func EvaluateHistogramInfOverflow(metrics parser.MetricsData) []rules.EvaluationResult {
 	var results []rules.EvaluationResult
 
 	// Get all histogram base names
@@ -168,8 +168,8 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 	var evaluations []seriesEvaluation
 
 	hasAnyData := false
-	hasProblematic := false
 	var worstOverall *seriesEvaluation
+	var worstSeriesKey string
 
 	// Evaluate each series separately
 	for seriesKey, buckets := range seriesBuckets {
@@ -227,9 +227,11 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		}
 		evaluations = append(evaluations, eval)
 
-		if worstOverall == nil || infPercentage > worstOverall.infPercentage {
+		if worstOverall == nil || infPercentage > worstOverall.infPercentage ||
+			(infPercentage == worstOverall.infPercentage && seriesKey < worstSeriesKey) {
 			worstCopy := eval
 			worstOverall = &worstCopy
+			worstSeriesKey = seriesKey
 		}
 	}
 
@@ -242,7 +244,6 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		if eval.status == rules.StatusGreen {
 			continue
 		}
-		hasProblematic = true
 		result := rules.EvaluationResult{
 			RuleName:     formatSeriesRuleName(baseName, eval.labels),
 			Status:       eval.status,
@@ -270,7 +271,7 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 		results = append(results, result)
 	}
 
-	if hasProblematic {
+	if len(results) > 0 {
 		sort.Slice(results, func(i, j int) bool {
 			if results[i].Status != results[j].Status {
 				return results[i].Status == rules.StatusRed
@@ -333,9 +334,9 @@ func formatSeriesRuleName(baseName string, labels map[string]string) string {
 	sort.Strings(keys)
 	var parts []string
 	for _, key := range keys {
-		parts = append(parts, key+"="+labels[key])
+		parts = append(parts, key+"=\""+labels[key]+"\"")
 	}
-	return baseName + "{" + strings.Join(parts, ", ") + "} (+Inf overflow check)"
+	return baseName + "{" + strings.Join(parts, ",") + "} (+Inf overflow check)"
 }
 
 func resolveMetricHelp(baseName string, metrics parser.MetricsData) string {

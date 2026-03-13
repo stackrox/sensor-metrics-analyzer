@@ -144,19 +144,24 @@ func (m Model) renderResultsList() string {
 	for i := start; i < end; i++ {
 		r := m.filteredResults[i]
 
-		// Truncate name if too long
+		nameMax := 35
+		msgMax := 40
+		if m.width > 90 {
+			nameMax = m.width*55/100 - 3
+			msgMax = m.width - nameMax - 5
+		}
+
 		name := r.RuleName
-		if len(name) > 35 {
-			name = name[:32] + "..."
+		if len(name) > nameMax {
+			name = name[:nameMax-3] + "..."
 		}
 
-		// Truncate message if too long
 		msg := r.Message
-		if len(msg) > 40 {
-			msg = msg[:37] + "..."
+		if len(msg) > msgMax {
+			msg = msg[:msgMax-3] + "..."
 		}
 
-		line := fmt.Sprintf("%s %-35s %s", StatusEmoji(string(r.Status)), name, msg)
+		line := fmt.Sprintf("%s %-*s %s", StatusEmoji(string(r.Status)), nameMax, name, msg)
 
 		if i == m.cursor {
 			lines = append(lines, selectedItemStyle.Render(line))

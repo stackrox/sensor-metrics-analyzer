@@ -426,7 +426,7 @@ func TestEvaluateHistogramInfOverflow(t *testing.T) {
 			},
 		}
 
-		results := EvaluateHistogramInfOverflow(metrics, rules.LoadLevelMedium)
+		results := EvaluateHistogramInfOverflow(metrics)
 		if len(results) != 2 {
 			t.Fatalf("expected 2 problematic series results, got %d", len(results))
 		}
@@ -445,11 +445,11 @@ func TestEvaluateHistogramInfOverflow(t *testing.T) {
 			}
 		}
 
-		if gotStatus["test_histogram{component=alpha} (+Inf overflow check)"] != rules.StatusRed {
-			t.Errorf("expected alpha series to be red, got %v", gotStatus["test_histogram{component=alpha} (+Inf overflow check)"])
+		if gotStatus[`test_histogram{component="alpha"} (+Inf overflow check)`] != rules.StatusRed {
+			t.Errorf("expected alpha series to be red, got %v", gotStatus[`test_histogram{component="alpha"} (+Inf overflow check)`])
 		}
-		if gotStatus["test_histogram{component=beta} (+Inf overflow check)"] != rules.StatusYellow {
-			t.Errorf("expected beta series to be yellow, got %v", gotStatus["test_histogram{component=beta} (+Inf overflow check)"])
+		if gotStatus[`test_histogram{component="beta"} (+Inf overflow check)`] != rules.StatusYellow {
+			t.Errorf("expected beta series to be yellow, got %v", gotStatus[`test_histogram{component="beta"} (+Inf overflow check)`])
 		}
 		if _, exists := gotStatus["test_histogram (+Inf overflow check)"]; exists {
 			t.Error("did not expect aggregated green summary when problematic series exist")
@@ -474,7 +474,7 @@ func TestEvaluateHistogramInfOverflow(t *testing.T) {
 			},
 		}
 
-		results := EvaluateHistogramInfOverflow(metrics, rules.LoadLevelMedium)
+		results := EvaluateHistogramInfOverflow(metrics)
 		if len(results) != 1 {
 			t.Fatalf("expected 1 green summary result, got %d", len(results))
 		}
@@ -503,12 +503,37 @@ func TestEvaluateHistogramInfOverflow(t *testing.T) {
 			},
 		}
 
-		results := EvaluateHistogramInfOverflow(metrics, rules.LoadLevelMedium)
+		results := EvaluateHistogramInfOverflow(metrics)
 		if len(results) != 1 {
 			t.Fatalf("expected 1 result, got %d", len(results))
 		}
 		if results[0].MetricHelp != "Bucket help fallback text" {
 			t.Errorf("expected fallback MetricHelp, got %q", results[0].MetricHelp)
+		}
+	})
+
+	t.Run("handles label-free histogram with only le buckets", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_histogram_bucket": &parser.Metric{
+				Name: "test_histogram_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		result := results[0]
+		if result.RuleName != "test_histogram (+Inf overflow check)" {
+			t.Errorf("expected label-free rule name, got %q", result.RuleName)
+		}
+		if result.Status != rules.StatusRed {
+			t.Errorf("expected red status (90%% overflow), got %v", result.Status)
 		}
 	})
 
@@ -524,7 +549,7 @@ func TestEvaluateHistogramInfOverflow(t *testing.T) {
 			},
 		}
 
-		results := EvaluateHistogramInfOverflow(metrics, rules.LoadLevelMedium)
+		results := EvaluateHistogramInfOverflow(metrics)
 		if len(results) != 0 {
 			t.Fatalf("expected 0 results, got %d", len(results))
 		}
