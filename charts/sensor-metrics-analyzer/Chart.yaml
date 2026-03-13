@@ -2,5 +2,5 @@ apiVersion: v2
 name: sma
 description: Sensor Metrics Analyzer web server
 type: application
-version: 0.0.4
-appVersion: "0.0.4"
+version: 0.0.5
+appVersion: "0.0.5"

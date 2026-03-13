@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: quay.io/rhacs-eng/sensor-metrics
-  tag: "0.0.4"
+  tag: "0.0.5"
   pullPolicy: IfNotPresent
 
 service:
