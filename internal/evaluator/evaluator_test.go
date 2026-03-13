@@ -406,138 +406,228 @@ func TestIsRuleApplicable(t *testing.T) {
 }
 
 func TestEvaluateHistogramInfOverflow(t *testing.T) {
-	tests := map[string]struct {
-		metrics    parser.MetricsData
-		wantStatus map[string]rules.Status // metric name -> expected status
-		wantCount  int                     // expected number of results
-	}{
-		"should return red status when >50% in +Inf": {
-			metrics: parser.MetricsData{
-				"test_histogram_bucket": &parser.Metric{
-					Name: "test_histogram_bucket",
-					Type: "histogram",
-					Values: []parser.MetricValue{
-						{Value: 10, Labels: map[string]string{"le": "0.1"}},
-						{Value: 20, Labels: map[string]string{"le": "0.5"}},
-						{Value: 30, Labels: map[string]string{"le": "1.0"}},
-						{Value: 100, Labels: map[string]string{"le": "+Inf"}}, // 70 in +Inf (70%)
-					},
+	t.Run("splits red and yellow by label set with label-aware titles", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_histogram": &parser.Metric{
+				Name: "test_histogram",
+				Help: "Histogram help from base metric",
+			},
+			"test_histogram_bucket": &parser.Metric{
+				Name: "test_histogram_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"component": "alpha", "le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"component": "alpha", "le": "+Inf"}}, // red (90%)
+					{Value: 70, Labels: map[string]string{"component": "beta", "le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"component": "beta", "le": "+Inf"}}, // yellow (30%)
+					{Value: 95, Labels: map[string]string{"component": "gamma", "le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"component": "gamma", "le": "+Inf"}}, // green (5%)
 				},
 			},
-			wantStatus: map[string]rules.Status{
-				"test_histogram (+Inf overflow check)": rules.StatusRed,
-			},
-			wantCount: 1,
-		},
-		"should return yellow status when >25% but <=50% in +Inf": {
-			metrics: parser.MetricsData{
-				"test_histogram_bucket": &parser.Metric{
-					Name: "test_histogram_bucket",
-					Type: "histogram",
-					Values: []parser.MetricValue{
-						{Value: 10, Labels: map[string]string{"le": "0.1"}},
-						{Value: 20, Labels: map[string]string{"le": "0.5"}},
-						{Value: 30, Labels: map[string]string{"le": "1.0"}},
-						{Value: 50, Labels: map[string]string{"le": "+Inf"}}, // 20 in +Inf (40%)
-					},
-				},
-			},
-			wantStatus: map[string]rules.Status{
-				"test_histogram (+Inf overflow check)": rules.StatusYellow,
-			},
-			wantCount: 1,
-		},
-		"should return green status when <=25% in +Inf": {
-			metrics: parser.MetricsData{
-				"test_histogram_bucket": &parser.Metric{
-					Name: "test_histogram_bucket",
-					Type: "histogram",
-					Values: []parser.MetricValue{
-						{Value: 10, Labels: map[string]string{"le": "0.1"}},
-						{Value: 20, Labels: map[string]string{"le": "0.5"}},
-						{Value: 30, Labels: map[string]string{"le": "1.0"}},
-						{Value: 35, Labels: map[string]string{"le": "+Inf"}}, // 5 in +Inf (14.3%)
-					},
-				},
-			},
-			wantStatus: map[string]rules.Status{
-				"test_histogram (+Inf overflow check)": rules.StatusGreen,
-			},
-			wantCount: 1,
-		},
-		"should skip histogram without +Inf bucket": {
-			metrics: parser.MetricsData{
-				"test_histogram_bucket": &parser.Metric{
-					Name: "test_histogram_bucket",
-					Type: "histogram",
-					Values: []parser.MetricValue{
-						{Value: 10, Labels: map[string]string{"le": "0.1"}},
-						{Value: 20, Labels: map[string]string{"le": "0.5"}},
-					},
-				},
-			},
-			wantStatus: map[string]rules.Status{},
-			wantCount:  0,
-		},
-		"should handle multiple histograms": {
-			metrics: parser.MetricsData{
-				"hist1_bucket": &parser.Metric{
-					Name: "hist1_bucket",
-					Type: "histogram",
-					Values: []parser.MetricValue{
-						{Value: 10, Labels: map[string]string{"le": "1.0"}},
-						{Value: 100, Labels: map[string]string{"le": "+Inf"}}, // 90 in +Inf (90%)
-					},
-				},
-				"hist2_bucket": &parser.Metric{
-					Name: "hist2_bucket",
-					Type: "histogram",
-					Values: []parser.MetricValue{
-						{Value: 10, Labels: map[string]string{"le": "1.0"}},
-						{Value: 15, Labels: map[string]string{"le": "+Inf"}}, // 5 in +Inf (33%)
-					},
-				},
-			},
-			wantStatus: map[string]rules.Status{
-				"hist1 (+Inf overflow check)": rules.StatusRed,
-				"hist2 (+Inf overflow check)": rules.StatusYellow,
-			},
-			wantCount: 2,
-		},
-	}
+		}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			results := EvaluateHistogramInfOverflow(tt.metrics, rules.LoadLevelMedium)
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 2 {
+			t.Fatalf("expected 2 problematic series results, got %d", len(results))
+		}
 
-			if len(results) != tt.wantCount {
-				t.Errorf("EvaluateHistogramInfOverflow() returned %d results, want %d", len(results), tt.wantCount)
+		gotStatus := map[string]rules.Status{}
+		for _, result := range results {
+			gotStatus[result.RuleName] = result.Status
+			if result.MetricHelp != "Histogram help from base metric" {
+				t.Errorf("unexpected MetricHelp: %q", result.MetricHelp)
 			}
-
-			for _, result := range results {
-				wantStatus, exists := tt.wantStatus[result.RuleName]
-				if !exists {
-					t.Errorf("Unexpected result for metric %s", result.RuleName)
-					continue
-				}
-
-				if result.Status != wantStatus {
-					t.Errorf("EvaluateHistogramInfOverflow() for %s = %v, want %v", result.RuleName, result.Status, wantStatus)
-				}
-
-				// Verify message contains expected information
-				if result.Status != rules.StatusGreen {
-					if result.Message == "" {
-						t.Error("Message should not be empty for non-green status")
-					}
-					if !strings.Contains(result.Message, "Highest non-infinity bucket") {
-						t.Error("Message should contain 'Highest non-infinity bucket'")
-					}
-					if !strings.Contains(result.Message, "didn't expect") {
-						t.Error("Message should contain explanation about designer expectations")
-					}
-				}
+			if result.Message == "" {
+				t.Errorf("message should not be empty for %s", result.RuleName)
 			}
-		})
-	}
+			if !strings.Contains(result.Message, "Highest non-infinity bucket") {
+				t.Errorf("message should contain highest finite bucket details for %s", result.RuleName)
+			}
+		}
+
+		if gotStatus[`test_histogram{component="alpha"} (+Inf overflow check)`] != rules.StatusRed {
+			t.Errorf("expected alpha series to be red, got %v", gotStatus[`test_histogram{component="alpha"} (+Inf overflow check)`])
+		}
+		if gotStatus[`test_histogram{component="beta"} (+Inf overflow check)`] != rules.StatusYellow {
+			t.Errorf("expected beta series to be yellow, got %v", gotStatus[`test_histogram{component="beta"} (+Inf overflow check)`])
+		}
+		if _, exists := gotStatus["test_histogram (+Inf overflow check)"]; exists {
+			t.Error("did not expect aggregated green summary when problematic series exist")
+		}
+	})
+
+	t.Run("emits single green summary when all series are green", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_histogram": &parser.Metric{
+				Name: "test_histogram",
+				Help: "Green summary help",
+			},
+			"test_histogram_bucket": &parser.Metric{
+				Name: "test_histogram_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 95, Labels: map[string]string{"component": "alpha", "le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"component": "alpha", "le": "+Inf"}},
+					{Value: 92, Labels: map[string]string{"component": "beta", "le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"component": "beta", "le": "+Inf"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 green summary result, got %d", len(results))
+		}
+		result := results[0]
+		if result.RuleName != "test_histogram (+Inf overflow check)" {
+			t.Errorf("unexpected green summary rule name: %q", result.RuleName)
+		}
+		if result.Status != rules.StatusGreen {
+			t.Errorf("expected green summary status, got %v", result.Status)
+		}
+		if result.MetricHelp != "Green summary help" {
+			t.Errorf("unexpected MetricHelp on green summary: %q", result.MetricHelp)
+		}
+	})
+
+	t.Run("falls back to bucket help when base help missing", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_histogram_bucket": &parser.Metric{
+				Name: "test_histogram_bucket",
+				Help: "Bucket help fallback text",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"component": "alpha", "le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"component": "alpha", "le": "+Inf"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if results[0].MetricHelp != "Bucket help fallback text" {
+			t.Errorf("expected fallback MetricHelp, got %q", results[0].MetricHelp)
+		}
+	})
+
+	t.Run("handles label-free histogram with only le buckets", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_histogram_bucket": &parser.Metric{
+				Name: "test_histogram_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "1.0"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		result := results[0]
+		if result.RuleName != "test_histogram (+Inf overflow check)" {
+			t.Errorf("expected label-free rule name, got %q", result.RuleName)
+		}
+		if result.Status != rules.StatusRed {
+			t.Errorf("expected red status (90%% overflow), got %v", result.Status)
+		}
+	})
+
+	t.Run("skips histogram without +Inf bucket", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_histogram_bucket": &parser.Metric{
+				Name: "test_histogram_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "0.1"}},
+					{Value: 20, Labels: map[string]string{"le": "0.5"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 0 {
+			t.Fatalf("expected 0 results, got %d", len(results))
+		}
+	})
+
+	t.Run("guesses unit from metric name for +Inf output", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"test_duration_seconds_bucket": &parser.Metric{
+				Name: "test_duration_seconds_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "512"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if !strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 s") {
+			t.Fatalf("expected guessed seconds unit in message, got: %s", results[0].Message)
+		}
+		details := strings.Join(results[0].Details, "\n")
+		if !strings.Contains(details, "Highest non-infinity bucket: 512 s") {
+			t.Fatalf("expected guessed seconds unit in details, got: %s", details)
+		}
+	})
+
+	t.Run("uses help text only when unit is unambiguous", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"mystery_metric": &parser.Metric{
+				Name: "mystery_metric",
+				Help: "Time taken in milliseconds for processing",
+				Type: "histogram",
+			},
+			"mystery_metric_bucket": &parser.Metric{
+				Name: "mystery_metric_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "512"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if !strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 ms") {
+			t.Fatalf("expected guessed milliseconds unit in message, got: %s", results[0].Message)
+		}
+	})
+
+	t.Run("does not use help text when multiple units are present", func(t *testing.T) {
+		metrics := parser.MetricsData{
+			"mystery_metric": &parser.Metric{
+				Name: "mystery_metric",
+				Help: "Latency shown in milliseconds and seconds for compatibility",
+				Type: "histogram",
+			},
+			"mystery_metric_bucket": &parser.Metric{
+				Name: "mystery_metric_bucket",
+				Type: "histogram",
+				Values: []parser.MetricValue{
+					{Value: 10, Labels: map[string]string{"le": "512"}},
+					{Value: 100, Labels: map[string]string{"le": "+Inf"}},
+				},
+			},
+		}
+		results := EvaluateHistogramInfOverflow(metrics)
+		if len(results) != 1 {
+			t.Fatalf("expected 1 result, got %d", len(results))
+		}
+		if strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 ms") ||
+			strings.Contains(results[0].Message, "Highest non-infinity bucket: 512 s") {
+			t.Fatalf("expected no guessed unit in ambiguous help text, got: %s", results[0].Message)
+		}
+	})
 }

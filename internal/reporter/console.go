@@ -64,6 +64,9 @@ func GenerateConsole(report rules.AnalysisReport) string {
 		for _, r := range redResults {
 			result.WriteString(color.New(color.Bold).Sprintf("%s\n", r.RuleName))
 			result.WriteString(color.RedString("  Status: RED\n"))
+			if r.MetricHelp != "" {
+				result.WriteString(fmt.Sprintf("  Metric description: %s\n", r.MetricHelp))
+			}
 			result.WriteString(fmt.Sprintf("  Message: %s\n", r.Message))
 			if r.ReviewStatus != "" {
 				result.WriteString(fmt.Sprintf("  Review: %s\n", r.ReviewStatus))
@@ -95,6 +98,9 @@ func GenerateConsole(report rules.AnalysisReport) string {
 		for _, r := range yellowResults {
 			result.WriteString(color.New(color.Bold).Sprintf("%s\n", r.RuleName))
 			result.WriteString(color.YellowString("  Status: YELLOW\n"))
+			if r.MetricHelp != "" {
+				result.WriteString(fmt.Sprintf("  Metric description: %s\n", r.MetricHelp))
+			}
 			result.WriteString(fmt.Sprintf("  Message: %s\n", r.Message))
 			if r.ReviewStatus != "" {
 				result.WriteString(fmt.Sprintf("  Review: %s\n", r.ReviewStatus))
