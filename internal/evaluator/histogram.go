@@ -262,7 +262,8 @@ func evaluateSingleHistogramInfOverflow(baseName string, metrics parser.MetricsD
 			"Highest non-infinity bucket: "+formatHumanNumber(eval.highestFiniteLe)+" unit",
 		)
 		result.Message = fmt.Sprintf("%s%% of observations are in +Inf bucket (%s out of %s). "+
-			"This indicates the metric designer likely didn't expect processing durations to be so high. "+
+			"This indicates the metric designer likely didn't expect the values to be so high. "+
+			"This may indicate a problem in the system or a problem with metrics design. "+
 			"Highest non-infinity bucket: %s",
 			formatHumanNumber(eval.infPercentage),
 			formatHumanNumber(eval.infObservations),
