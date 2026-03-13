@@ -28,6 +28,7 @@ func TestE2EAnalyzeCommand(t *testing.T) {
 				"analyze",
 				"--rules", "../../testdata/fixtures",
 				"--format", "markdown",
+				"--template", "../../templates/markdown.tmpl",
 				"--output", "/tmp/test_e2e_report.md",
 				"../../testdata/fixtures/sample_metrics.txt",
 			},
@@ -209,9 +210,12 @@ func TestE2EFullWorkflow(t *testing.T) {
 	metricsPath := filepath.Join("..", "..", "testdata", "fixtures", "sample_metrics.txt")
 	rulesPath := filepath.Join("..", "..", "testdata", "fixtures")
 
+	templatePath := filepath.Join("..", "..", "templates", "markdown.tmpl")
+
 	cmd := exec.Command(absPath, "analyze",
 		"--rules", rulesPath,
 		"--format", "markdown",
+		"--template", templatePath,
 		"--output", "/tmp/e2e_test_report.md",
 		metricsPath,
 	)
