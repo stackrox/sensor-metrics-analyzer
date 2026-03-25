@@ -156,42 +156,6 @@
             display: block;
         }
 
-        .tabs {
-            display: flex;
-            border-bottom: 2px solid #ecf0f1;
-            margin-bottom: 20px;
-        }
-
-        .tab {
-            padding: 12px 24px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            color: #7f8c8d;
-            font-size: 16px;
-            transition: color 0.3s;
-            margin: 0;
-            border-radius: 0;
-        }
-
-        .tab:hover {
-            color: #3498db;
-        }
-
-        .tab.active {
-            color: #3498db;
-            border-bottom: 2px solid #3498db;
-            margin-bottom: -2px;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
         .markdown-rendered {
             background: #ffffff;
             color: #2c3e50;
@@ -225,6 +189,23 @@
             padding: 16px;
             border-radius: 4px;
             overflow-x: auto;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .report-download-btn {
+            margin-top: 0;
+            padding: 10px 16px;
+            font-size: 14px;
+            background: #16a085;
+        }
+
+        .report-download-btn:hover:not(:disabled) {
+            background: #138d75;
         }
 
         pre {
@@ -275,7 +256,7 @@
             Privacy: Uploaded files are analyzed and not retained. Temporary files are deleted immediately after processing, and metric data is not stored.
         </div>
         <div class="disclaimer-note">
-            Disclaimer: This project is AI-generated and only a small fraction of the code and metric rules were verified by a human. Analysis results may be inaccurate and, in extreme cases, totally wrong.
+            Disclaimer: The code of this project is AI-generated and only a fraction of the code and metric rules were verified by a human. Analysis results may be inaccurate and - in extreme cases - totally wrong.
         </div>
 
         <div class="upload-section" id="uploadSection">
@@ -293,17 +274,11 @@
         </div>
 
         <div class="results" id="results">
-            <div class="tabs">
-                <button class="tab" data-tab="console">Console Output</button>
-                <button class="tab active" data-tab="markdown">Markdown Report</button>
+            <div class="report-actions">
+                <button id="downloadMdBtn" class="report-download-btn" disabled>Download Markdown</button>
+                <button id="downloadHtmlBtn" class="report-download-btn" disabled>Download HTML</button>
             </div>
-            <div class="tab-content" id="consoleTab">
-                <pre id="consoleOutput"></pre>
-            </div>
-            <div class="tab-content active" id="markdownTab">
-                <div id="markdownRendered" class="markdown-rendered"></div>
-                <pre id="markdownOutput" style="margin-top: 16px;"></pre>
-            </div>
+            <div id="markdownRendered" class="markdown-rendered"></div>
         </div>
     </div>
 
@@ -316,14 +291,15 @@
         const errorDiv = document.getElementById('error');
         const loadingDiv = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
-        const consoleOutput = document.getElementById('consoleOutput');
-        const markdownOutput = document.getElementById('markdownOutput');
         const markdownRendered = document.getElementById('markdownRendered');
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
+        const downloadMdBtn = document.getElementById('downloadMdBtn');
+        const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
         const versionValue = document.getElementById('versionValue');
         const lastUpdateValue = document.getElementById('lastUpdateValue');
         const releaseLink = document.getElementById('releaseLink');
+        let currentMarkdownReport = '';
+        let currentRenderedReportHtml = '';
+        let currentReportBaseName = 'sensor-metrics-report';
 
         const releasesUrl = 'https://github.com/stackrox/sensor-metrics-analyzer/releases';
         releaseLink.href = releasesUrl;
@@ -406,6 +382,10 @@
             resultsDiv.classList.remove('show');
             loadingDiv.style.display = 'block';
             analyzeBtn.disabled = true;
+            setDownloadButtonsEnabled(false);
+            currentMarkdownReport = '';
+            currentRenderedReportHtml = '';
+            currentReportBaseName = 'sensor-metrics-report';
 
             const formData = new FormData();
             formData.append('file', file);
@@ -421,28 +401,20 @@
                 loadingDiv.style.display = 'none';
                 analyzeBtn.disabled = false;
 
-                if (data.error && !data.console && !data.markdown) {
+                if (data.error && !data.markdown) {
                     showError(data.error);
                     return;
                 }
 
-                // Show results
-                if (data.console) {
-                    consoleOutput.textContent = data.console;
-                } else {
-                    consoleOutput.textContent = 'No console output available';
-                }
-
                 if (data.markdown) {
-                    if (window.marked && typeof window.marked.parse === 'function') {
-                        markdownRendered.innerHTML = window.marked.parse(data.markdown);
-                    } else {
-                        markdownRendered.textContent = data.markdown;
-                    }
-                    markdownOutput.textContent = data.markdown;
+                    currentMarkdownReport = data.markdown;
+                    currentRenderedReportHtml = renderMarkdownToHtml(data.markdown);
+                    markdownRendered.innerHTML = currentRenderedReportHtml;
+                    currentReportBaseName = buildReportBaseName(data.clusterName, data.analysisTimestamp);
+                    setDownloadButtonsEnabled(true);
                 } else {
                     markdownRendered.textContent = 'No markdown output available';
-                    markdownOutput.textContent = 'No markdown output available';
+                    setDownloadButtonsEnabled(false);
                 }
 
                 if (data.error) {
@@ -457,28 +429,139 @@
             }
         });
 
-        // Tab switching
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const targetTab = tab.dataset.tab;
+        downloadMdBtn.addEventListener('click', () => {
+            if (!currentMarkdownReport) {
+                return;
+            }
+            downloadTextFile(currentMarkdownReport, `${currentReportBaseName}.md`, 'text/markdown;charset=utf-8');
+        });
 
-                // Update active tab
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                // Update active content
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === targetTab + 'Tab') {
-                        content.classList.add('active');
-                    }
-                });
-            });
+        downloadHtmlBtn.addEventListener('click', () => {
+            if (!currentRenderedReportHtml) {
+                return;
+            }
+            const htmlDocument = buildHtmlReportDocument(currentRenderedReportHtml, currentReportBaseName);
+            downloadTextFile(htmlDocument, `${currentReportBaseName}.html`, 'text/html;charset=utf-8');
         });
 
         function showError(message) {
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+        }
+
+        function setDownloadButtonsEnabled(isEnabled) {
+            downloadMdBtn.disabled = !isEnabled;
+            downloadHtmlBtn.disabled = !isEnabled;
+        }
+
+        function renderMarkdownToHtml(markdown) {
+            if (window.marked && typeof window.marked.parse === 'function') {
+                return window.marked.parse(markdown);
+            }
+            return `<pre>${escapeHtml(markdown)}</pre>`;
+        }
+
+        function buildReportBaseName(clusterName, analysisTimestamp) {
+            const sanitizedCluster = sanitizeFilePart(clusterName || 'cluster');
+            const formattedDate = formatDateForFilename(analysisTimestamp);
+            return `sensor-metrics-${sanitizedCluster}-${formattedDate}`;
+        }
+
+        function formatDateForFilename(rawTimestamp) {
+            const date = rawTimestamp ? new Date(rawTimestamp) : new Date();
+            if (Number.isNaN(date.getTime())) {
+                return 'unknown-date';
+            }
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const hours = String(date.getUTCHours()).padStart(2, '0');
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+        }
+
+        function sanitizeFilePart(value) {
+            return String(value)
+                .toLowerCase()
+                .replace(/[^a-z0-9-]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 64) || 'cluster';
+        }
+
+        function downloadTextFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function buildHtmlReportDocument(renderedHtml, reportBaseName) {
+            const escapedTitle = escapeHtml(reportBaseName);
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escapedTitle}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f7f9fb;
+            color: #2c3e50;
+            margin: 0;
+            padding: 24px;
+        }
+        .report {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #e4ebf0;
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .report h1, .report h2, .report h3, .report h4 {
+            margin: 16px 0 8px;
+        }
+        .report p {
+            margin: 8px 0;
+        }
+        .report code {
+            background: #f2f4f6;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+        }
+        .report pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 16px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <article class="report">
+${renderedHtml}
+    </article>
+</body>
+</html>`;
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
     </script>
 </body>

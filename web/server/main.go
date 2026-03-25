@@ -32,9 +32,11 @@ type Config struct {
 }
 
 type AnalyzeResponse struct {
-	Markdown string `json:"markdown"`
-	Console  string `json:"console"`
-	Error    string `json:"error,omitempty"`
+	Markdown          string `json:"markdown"`
+	Console           string `json:"console"`
+	ClusterName       string `json:"clusterName,omitempty"`
+	AnalysisTimestamp string `json:"analysisTimestamp,omitempty"`
+	Error             string `json:"error,omitempty"`
 }
 
 type VersionResponse struct {
@@ -183,6 +185,8 @@ func handleAnalyzeBoth(cfg *Config) http.HandlerFunc {
 		if err != nil {
 			response.Error = fmt.Sprintf("Analysis failed: %v", err)
 		} else {
+			response.ClusterName = report.ClusterName
+			response.AnalysisTimestamp = report.Timestamp.Format(time.RFC3339)
 			response.Console = reporter.GenerateConsole(report)
 			markdown, mdErr := reporter.GenerateMarkdown(report, cfg.TemplatePath)
 			if mdErr != nil {
